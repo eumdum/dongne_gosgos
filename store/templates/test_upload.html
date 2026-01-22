@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>동네곳곳 AI 테스트</title>
+</head>
+<body>
+    <h2>🍞 동네곳곳 빵 인식 테스트 (MVP 1.0)</h2>
+    <form id="uploadForm">
+        <input type="file" id="imageInput" accept="image/*">
+        <button type="submit">분석하기</button>
+    </form>
+
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; width: 300px;">
+        결과가 여기에 표시됩니다.
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('result');
+            const imageFile = document.getElementById('imageInput').files[0];
+            if (!imageFile) return alert("사진을 골라주세요!");
+
+            resultDiv.innerText = "분석 중...";
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            const response = await fetch('/api/detect/', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            resultDiv.innerText = JSON.stringify(data, null, 2);
+        };
+    </script>
+</body>
+</html>

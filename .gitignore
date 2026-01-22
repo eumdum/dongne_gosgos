@@ -1,0 +1,27 @@
+# 가상환경 폴더
+venv/
+.venv/
+
+# 파이썬 캐시 파일
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# 데이터베이스 파일 (개인 데이터이므로 올리지 않음)
+db.sqlite3
+*.sqlite3
+
+# VS Code 설정 폴더
+.vscode/
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db
+
+# 로컬 설정 파일
+local_settings.py
+
+# 미디어 파일 (테스트 파일 등)
+media/
