@@ -76,6 +76,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .models import Product  # 👈 MySQL 모델 불러오기 (이름 확인!)
 
 class ProductDetectionView(APIView):
     def post(self, request):
@@ -83,24 +84,25 @@ class ProductDetectionView(APIView):
         if not file:
             return Response({"error": "사진이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. 이미지를 Base64로 안전하게 인코딩
+        # 1. 이미지를 Base64로 인코딩
         image_bytes = file.read()
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # 2. 로보플로우 API 호출 (주소와 키를 다시 확인하세요!)
-        # ⚠️ 여기서 'redbean-bread/3' 부분을 로보플로우 웹 주소창에 있는 것과 똑같이 쓰세요!
-        project_id = "redbean-bread" 
+        # 2. 로보플로우 API 설정
+        # URL 주소를 변수를 활용해 더 깔끔하게 정리했습니다.
+        project_id = "1_redbeen-bread" 
         version = "5"
-        url = f"https://detect.roboflow.com/1_redbeen-bread/5"
+        api_key = "GduHmcxbyeKZQjHOdTT6"
+        url = f"https://detect.roboflow.com/{project_id}/{version}"
         
         params = {
-            "api_key": "GduHmcxbyeKZQjHOdTT6",
-            "confidence": "0.1",  # 👈 10%만 넘어도 무조건 다 알려달라고 설정!
+            "api_key": api_key,
+            "confidence": "0.1",
             "overlap": "30"
         }
 
         try:
-            # 3. API 요청 (헤더에 Content-Type 명시)
+            # 3. 로보플로우 API 요청
             response = requests.post(
                 url, 
                 params=params, 
@@ -109,16 +111,33 @@ class ProductDetectionView(APIView):
             )
             data = response.json()
 
-            # 디버깅용: 서버 터미널에 로보플로우가 보내준 생(Raw) 데이터를 출력해봅니다.
+            # 디버깅용: 터미널에서 데이터 확인
             print("Roboflow Raw Data:", data)
 
             detected_items = []
             if "predictions" in data:
                 for pred in data["predictions"]:
-                    detected_items.append({
-                        "name": pred["class"],
-                        "confidence": round(pred["confidence"], 2)
-                    })
+                    # AI가 인식한 영어 이름 (예: 'bread')
+                    label = pred["class"]
+                    
+                    try:
+                        # 4. 🌟 MySQL에서 빵 정보 가져오기 🌟
+                        # category_name이 로보플로우의 label과 일치하는 데이터를 찾습니다.
+                        product = Product.objects.get(category_name=label)
+                        
+                        detected_items.append({
+                            "name": product.display_name,  # 한글 이름 (단팥빵)
+                            "price": product.price,        # 가격 (2000)
+                            "confidence": round(pred["confidence"] * 100, 1), # % 단위로 변경
+                            "stock": product.stock         # 재고 정보 추가
+                        })
+                    except Product.DoesNotExist:
+                        # DB에 해당 빵이 없을 경우
+                        detected_items.append({
+                            "name": f"미등록({label})",
+                            "price": 0,
+                            "confidence": round(pred["confidence"] * 100, 1)
+                        })
 
             return Response({
                 "status": "success",
