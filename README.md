@@ -17,9 +17,11 @@
 
 ### 메인 화면
 
-![메인1](./images/main_1.PNG)
-![메인2](./images/main_2.PNG)
-![메인3](./images/main_3.PNG)
+<p align="center">
+  <img src="./images/main_1.PNG" width="250"/>
+  <img src="./images/main_2.PNG" width="250"/>
+  <img src="./images/main_3.PNG" width="250"/>
+</p>
 
 ### 장바구니
 
