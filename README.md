@@ -25,20 +25,28 @@
 
 ### 장바구니
 
-![장바구니1](./images/cart_1.PNG)
+<p align="center">
+  <img src="./images/cart_1.PNG" width="300"/>
+</p>
 
 ### 결제
 
-![결제1](./images/pay_1.PNG)
+<p align="center">
+  <img src="./images/pay_1" width="300"/>
+</p>
 
 ### 주문서
 
-![주문서](./images/order_1.PNG)
+<p align="center">
+  <img src="./images/order_1" width="300"/>
+</p>
 
 ### 빵 인식 (OCR + AI)
 
-![OCR1](./images/ocr_1.PNG)
-![OCR2](./images/ocr_2.PNG)
+<p align="center">
+  <img src="./images/ocr_1" width="300"/>
+  <img src="./images/ocr_2" width="300"/>
+</p>
 
 ---
 
