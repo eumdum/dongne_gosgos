@@ -32,20 +32,20 @@
 ### 결제
 
 <p align="center">
-  <img src="./images/pay_1" width="300"/>
+  <img src="./images/pay_1.PNG" width="300"/>
 </p>
 
 ### 주문서
 
 <p align="center">
-  <img src="./images/order_1" width="300"/>
+  <img src="./images/order_1.PNG" width="300"/>
 </p>
 
 ### 빵 인식 (OCR + AI)
 
 <p align="center">
-  <img src="./images/ocr_1" width="300"/>
-  <img src="./images/ocr_2" width="300"/>
+  <img src="./images/ocr_1.PNG" width="300"/>
+  <img src="./images/ocr_2.PNG" width="300"/>
 </p>
 
 ---
