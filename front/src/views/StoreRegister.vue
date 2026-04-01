@@ -1,191 +1,619 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4 flex flex-col items-center font-sans">
-    
-    <!-- 메인 컨텐츠 레이어 -->
-    <!-- max-w-md: PC에서도 너무 퍼지지 않게 잡아줌 -->
-    <!-- w-full: 모바일에서는 가로 꽉 차게 -->
-    <div 
-      class="w-full max-w-md flex flex-col items-center transition-opacity duration-300"
-      :class="{ 'opacity-0 pointer-events-none': showModal }"
-    >
-      <!-- 헤더 -->
-      <header class="w-full my-8 text-center">
-        <!-- text-2xl md:text-3xl: 모바일에선 작게, PC에선 크게 -->
-        <h1 class="text-2xl md:text-3xl font-extrabold text-[#82be8c] tracking-tight mb-2">
-          동네곳곳 AI 등록
-        </h1>
-        <p class="text-sm md:text-base text-gray-500 font-medium">
-          사진을 찍으면 정보가 자동 입력됩니다.
-        </p>
-      </header>
+  <div class="store-pickup">
+    <header class="header-container">
+      <div class="header-left">
+        <router-link to="/main" class="back-btn">←</router-link>
+        <h1>📸 할인 빵 등록</h1>
+      </div>
+      <button @click="triggerFileInput" class="refresh-btn">촬영 📸</button>
+    </header>
 
-      <!-- 업로드 카드 -->
-      <!-- w-full: 모바일에서 화면 너비에 맞춤 -->
-      <!-- aspect-square: 정사각형 비율 유지 -->
-      <!-- min-h-[...]: 최소 높이 지정 -->
+    <div v-if="!isLoading && cartItems.length === 0" class="empty-state-card" @click="triggerFileInput">
+      <div class="upload-icon">🍞</div>
+      <p>여기를 눌러 빵 사진을 찍어주세요!</p>
+    </div>
+
+    <div v-if="cartItems.length > 0" class="control-panel">
+      <div class="bulk-actions">
+        <label class="check-container">
+          <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
+          <span class="check-text">전체 선택</span>
+        </label>
+        <button @click="removeSelected" class="action-btn text-red">선택 삭제</button>
+        <button @click="removeAll" class="action-btn text-gray">전체 비우기</button>
+      </div>
+
+      <div class="discount-input-group">
+        <span class="label">선택한 빵 할인율 :</span>
+        <input type="number" v-model="bulkDiscount" placeholder="20" class="discount-input" />
+        <span class="unit">%</span>
+        <button @click="applyBulkDiscount" class="apply-btn">적용</button>
+      </div>
+    </div>
+
+    <div class="order-grid" v-if="cartItems.length > 0">
       <div 
-        class="w-full bg-white rounded-[2rem] shadow-xl p-6 border border-gray-100 
-               transition-all active:scale-95 cursor-pointer flex flex-col items-center 
-               justify-center min-h-[300px] md:min-h-[400px] relative overflow-hidden group"
-        @click="triggerFileInput"
+        v-for="item in cartItems" 
+        :key="item.id" 
+        class="order-card" 
+        :class="{ 'selected-card': item.selected }"
+        @click="toggleItemSelection(item)"
       >
-        <div v-if="!isLoading" class="flex flex-col items-center relative z-10">
-          <div class="w-16 h-16 md:w-20 md:h-20 bg-green-600 text-white rounded-full flex items-center justify-center mb-4 md:mb-6 shadow-lg shadow-red-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 md:w-10 md:h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-              <circle cx="12" cy="13" r="3"/>
-            </svg>
+        <div class="card-top-row">
+          <input 
+            type="checkbox" 
+            v-model="item.selected" 
+            class="item-checkbox" 
+            @click.stop
+          />
+          <button @click="removeItem(item.id)" class="delete-small-btn">❌</button>
+        </div>
+
+        <div class="card-header">
+          <span class="pickup-num">{{ item.name }}</span>
+        </div>
+
+        <div class="card-body">
+          <div class="info-row">
+            <span>수량: <strong>{{ item.count }}개</strong></span>
+            <span class="original-price">{{ (item.original_price * item.count).toLocaleString() }}원</span>
           </div>
-          <p class="text-xl md:text-2xl font-black text-gray-800 mb-2">사진 찍기</p>
+          <div class="price-row">
+            <span class="discount-tag">{{ item.discount }}% OFF</span>
+            <span class="final-price">{{ (item.price * item.count).toLocaleString() }}원</span>
+          </div>
         </div>
-
-        <div v-else class="flex flex-col items-center relative z-10">
-          <div class="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-[5px] border-black-100 border-t-purple-600 mb-4 md:mb-6"></div>
-          <p class="text-pink-600 font-black text-lg md:text-xl">AI 분석 중...</p>
-        </div>
-
-        <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="onFileSelected" />
       </div>
     </div>
 
-    <!-- AI 분석 결과 모달 (반응형 적용 완료) -->
-    <div v-if="showModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      
-      <!-- 1. 배경 오버레이 -->
-      <div 
-        class="absolute inset-0"
-        style="background-color: #2D3748; opacity: 1;"
-        @click="showModal = false"
-      ></div>
+    <div v-if="showModal || isLoading" class="modal-overlay">
+      <div class="modal-content">
 
-      <!-- 2. 모달 컨텐츠 박스 -->
-      <!-- w-[90%]: 모바일에서는 화면의 90%만 차지 -->
-      <!-- md:w-auto: PC에서는 내용물 크기에 맞춤 -->
-      <!-- md:min-w-[600px]: PC 최소 너비 보장 -->
-      <!-- max-h-[90vh]: 세로가 너무 길면 스크롤 생기게 -->
-      <div class="relative bg-white rounded-[2rem] w-[90%] md:w-auto md:min-w-[600px] max-w-3xl 
-                  p-6 md:p-12 shadow-2xl transform transition-all animate-modal-pop border border-gray-100 
-                  flex flex-col justify-center overflow-y-auto max-h-[90vh]">
-        
-        <!-- 모달 헤더 -->
-        <div class="flex items-center justify-between mb-8 md:mb-16 border-b-4 border-gray-100 pb-6 md:pb-10">
-          <!-- text-3xl (폰) -> text-6xl (PC) -->
-          <h3 class="text-3xl md:text-6xl font-black text-gray-900 tracking-tight">✨ 분석 완료</h3>
-          <button @click="showModal = false" class="p-2 md:p-6 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 md:w-12 md:h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        
-        <div class="space-y-8 md:space-y-12">
-          <!-- 상품명 입력 -->
-          <div class="space-y-2 md:space-y-5">
-            <label class="text-lg md:text-2xl font-black text-[#8d2e2e] uppercase tracking-tight ml-2 md:ml-4">상품명</label>
-            <div class="bg-gray-50 rounded-2xl md:rounded-[2.5rem] p-4 md:p-10 border-4 border-transparent focus-within:border-blue-500 transition-all shadow-inner">
-              <!-- text-2xl (폰) -> text-5xl (PC) -->
-              <input 
-                v-model="analysisResult.item" 
-                class="w-full bg-transparent font-black text-2xl md:text-5xl text-gray-900 outline-none placeholder-gray-300" 
-                placeholder="상품명 입력" 
-              />
-            </div>
-          </div>
-          
-          <!-- 가격 입력 -->
-          <div class="space-y-2 md:space-y-5">
-            <label class="text-lg md:text-2xl font-black text-blue-600 uppercase tracking-widest ml-2 md:ml-4">추천 가격</label>
-            <div class="bg-gray-50 rounded-2xl md:rounded-[2.5rem] p-4 md:p-10 border-4 border-transparent focus-within:border-blue-500 transition-all flex items-baseline shadow-inner">
-              <!-- text-3xl (폰) -> text-6xl (PC) -->
-              <input 
-                v-model="analysisResult.price" 
-                type="number" 
-                class="w-full bg-transparent font-black text-3xl md:text-6xl text-gray-900 outline-none placeholder-gray-300" 
-              />
-              <span class="text-2xl md:text-5xl font-black text-gray-400 ml-2 md:ml-4">원</span>
-            </div>
-          </div>
+        <div v-if="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <h2>빵 분석 중... 🔍</h2>
+          <p>잠시만 기다려주세요!<br>AI가 사진 속 빵을 열심히 세고 있어요.</p>
         </div>
 
-        <!-- 버튼 -->
-        <button 
-          @click="confirmRegistration" 
-          class="w-full mt-10 md:mt-20 bg-[#3f2323] text-white font-black py-5 md:py-10 
-                 rounded-2xl md:rounded-[3rem] text-2xl md:text-4xl shadow-xl shadow-blue-200 
-                 hover:bg-blue-700 active:scale-[0.98] transition-all"
-        >
-          매대에 등록하기
-        </button>
+        <div v-else-if="showModal">
+          <h2>🔍 빵 인식 결과</h2>
+          <div class="detail-box scrollable">
+            <div v-for="(res, idx) in analysisResults" :key="idx" class="result-item-row">
+              <input v-model="res.name" class="edit-name" />
+              <div class="count-control">
+                <button @click="res.count > 1 ? res.count-- : null">-</button>
+                <span>{{ res.count }}</span>
+                <button @click="res.count++">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-buttons">
+            <button @click="confirmRegistration" class="btn-complete">목록에 추가</button>
+            <button @click="showModal = false" class="btn-close">취소</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <input type="file" ref="fileInput" class="hidden-input" accept="image/*" @change="onFileSelected" />
+
+    <footer v-if="cartItems.length > 0" class="floating-footer">
+      <button @click="registerComplete" class="btn-complete-all">
+        총 {{ totalCount }}개 세일 등록 하기 🥐
+      </button>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, computed, watch } from 'vue';
+import api from '@/api';
+import router from '@/router';
 
 const fileInput = ref(null);
-const isLoading = ref(false);
+const cartItems = ref([]);
+const analysisResults = ref([]);
 const showModal = ref(false);
-const analysisResult = ref({ item: '', price: 0, confidence: 0 });
-const selectedFile = ref(null);
+const isLoading = ref(false);
+const bulkDiscount = ref(20); // 기본 일괄 할인율
 
-const triggerFileInput = () => {
-  fileInput.value.click();
+const totalCount = computed(() => cartItems.value.reduce((acc, cur) => acc + cur.count, 0));
+const isAllSelected = computed(() => cartItems.value.length > 0 && cartItems.value.every(i => i.selected));
+
+const triggerFileInput = () => fileInput.value.click();
+
+onMounted(() => {
+  setTimeout(() => triggerFileInput(), 300);
+});
+
+const toggleSelectAll = () => {
+  const target = !isAllSelected.value;
+  cartItems.value.forEach(i => i.selected = target);
+};
+
+const toggleItemSelection = (item) => {
+  item.selected = !item.selected;
+};
+
+const applyBulkDiscount = () => {
+  cartItems.value.forEach(item => {
+    if (item.selected) {
+      item.discount = bulkDiscount.value;
+      item.price = Math.floor(item.original_price * (1 - item.discount / 100));
+    }
+  });
+};
+
+const removeSelected = () => {
+  cartItems.value = cartItems.value.filter(i => !i.selected);
+};
+const removeAll = () => {
+  if (confirm("모든 목록을 비울까요?")) cartItems.value = [];
 };
 
 const onFileSelected = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  
-  selectedFile.value = file;
+
+  showModal.value = false; 
   isLoading.value = true;
+
   const formData = new FormData();
   formData.append('image', file);
-  
+
   try {
-    // 1. 분석 요청 (저장 X)
-    const res = await axios.post('http://127.0.0.1:8000/api/stores/analyze/', formData);
-    analysisResult.value = { 
-      item: res.data.item || '분석 실패', 
-      price: res.data.price || 0, 
-      confidence: res.data.confidence || 0.95 
-    };
-    showModal.value = true;
+    const res = await api.post('/api/detect/', formData);
+    if (res.data?.items) {
+      const grouped = res.data.items.reduce((acc, current) => {
+        const found = acc.find(item => item.name === current.name);
+        if (found) found.count += 1;
+        else acc.push({
+          name: current.name,
+          product_id: current.product_id,
+          original_price: current.price, // 원가
+          price: current.price * 0.8, // 기본 20% 할인된 가격 
+          count: 1,
+          discount: 20, 
+          selected: true 
+        });
+        return acc;
+      }, []);
+      analysisResults.value = grouped;
+      isLoading.value = false;
+      showModal.value = true;
+    }
   } catch (err) {
-    console.error("통신 에러:", err);
-    alert("서버 연결 실패 (장고가 켜져 있는지 확인하세요)");
-  } finally {
     isLoading.value = false;
-    event.target.value = '';
+    alert("분석 실패!");
   }
+  
+  event.target.value = '';
 };
 
-const confirmRegistration = async () => {
-  if (!selectedFile.value) return;
+const confirmRegistration = () => {
+  analysisResults.value.forEach(item => {
+    cartItems.value.push({ ...item, id: Date.now() + Math.random() });
+  });
+  showModal.value = false;
+};
 
-  const formData = new FormData();
-  formData.append('image', selectedFile.value);
-  formData.append('item', analysisResult.value.item);
-  formData.append('price', analysisResult.value.price);
-  formData.append('confidence', analysisResult.value.confidence);
-  formData.append('title', 'AI 등록 상품'); 
+const removeItem = (id) => {
+  cartItems.value = cartItems.value.filter(i => i.id !== id);
+};
+
+const registerComplete = async () => {
+  if (cartItems.value.length === 0) {
+    alert("등록할 빵이 없습니다!");
+    return;
+  }
 
   try {
-    // 2. 최종 저장 요청
-    await axios.post('http://127.0.0.1:8000/api/stores/', formData);
-    alert(`${analysisResult.value.item} 등록이 완료되었습니다!`);
-    showModal.value = false;
+    const formattedProducts = cartItems.value.map(item => ({
+      name: item.name,
+      product_id: item.product_id,
+      count: item.count,
+      // AI가 분석한 원가 (onFileSelected에서 original_price 혹은 originalPrice로 저장된 값)
+      original_price: item.original_price || item.originalPrice, 
+      // 사장님이 할인율 적용해서 계산된 할인가
+      discount_price: item.price 
+    }));
+
+    await api.post('/api/save-products/', { 
+      products: formattedProducts 
+    });
+
+    alert("✅ 세일 등록이 완료되었습니다!");
+    cartItems.value = [];
+    router.push('/main'); 
+    
   } catch (err) {
-    console.error("저장 실패:", err);
-    alert("저장에 실패했습니다.");
+    alert("저장에 실패했습니다. 다시 시도해주세요.");
   }
 };
 </script>
 
 <style scoped>
-@keyframes modalPop {
-  0% { opacity: 0; transform: scale(0.9) translateY(30px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+.store-pickup {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: 120px;
+  background: #fdfdfd;
 }
-.animate-modal-pop { animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-left h1 {
+  font-size: 1.8rem;
+  margin: 0;
+  color: #3A5635;
+}
+
+.control-panel {
+  background: white;
+  border: 3px solid #222;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 25px;
+  box-shadow: 5px 5px 0px #222;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #ccc;
+}
+
+.discount-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discount-input {
+  width: 60px;
+  padding: 8px;
+  border: 2px solid #222;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.apply-btn {
+  background: #4c7045;
+  color: white;
+  border: 2px solid #222;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.order-card {
+  position: relative;
+  border: 3px solid #222;
+  padding: 15px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 4px 4px 0px #222;
+  transition: 0.2s;
+  cursor: pointer;
+  user-select: none;;
+}
+
+.order-card:active {
+  transform: scale(0.98);
+}
+
+.selected-card {
+  background: #fff9f0;
+  border-color: #D57B0E;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.item-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.pickup-num {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #4e342e;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.discount-tag {
+  background: #e74c3c;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.final-price {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #4c7045;
+}
+
+.floating-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.btn-complete-all {
+  width: 90%;
+  max-width: 500px;
+  background: #4c7045;
+  color: white;
+  border: 3px solid #222;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  box-shadow: 6px 6px 0px #222;
+  cursor: pointer;
+}
+
+
+
+.back-btn {
+  text-decoration: none;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.refresh-btn {
+  background: #D57B0E;
+  color: white;
+  border: 3px solid #222;
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px #222;
+  transition: 0.1s;
+}
+
+.refresh-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px #222;
+}
+
+.empty-state-card {
+  border: 4px dashed #3A5635;
+  border-radius: 20px;
+  padding: 80px 20px;
+  text-align: center;
+  margin-top: 40px;
+  cursor: pointer;
+  background: #fff;
+  transition: 0.2s;
+}
+
+.empty-state-card:hover {
+  background: #f9f9f9;
+  border-color: #D57B0E;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.empty-state-card p {
+  font-weight: 900;
+  font-size: 1.3rem;
+  color: #3A5635;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #ffb84d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.loading-state h2 {
+  color: #4e342e;
+  margin-bottom: 10px;
+}
+
+.loading-state p {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.result-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.edit-name {
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  width: 300px;
+}
+
+.count-control {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-complete {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-close {
+  background: #eee;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.delete-small-btn {
+  position: absolute; 
+  top: 10px;
+  right: 10px;
+  
+  border: none;
+  background: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline; 
+  font-size: 0.9rem;
+}
+
+.text-red { color: #e74c3c; } 
+.text-gray { color: #7f8c8d; }
+
+.check-text {
+  font-weight: 900;
+  color: #333;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.check-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.item-checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: #D57B0E;
+  cursor: pointer;
+}
 </style>

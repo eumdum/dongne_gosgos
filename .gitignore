@@ -25,3 +25,8 @@ local_settings.py
 
 # 미디어 파일 (테스트 파일 등)
 media/
+
+.env
+
+# Google Cloud API Key
+google_key.json

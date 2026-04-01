@@ -1,31 +1,88 @@
-동네곳곳
+# 🥐 동네곳곳
 
-2025-12-28
-feat: 동네곳곳 프로젝트 초기화 및 핵심 기능 구현 완료
+> 버려질 수 있는 빵을 할인 판매로 연결하는 위치 기반 서비스
 
-- 프로젝트 리팩토링: LoL(오늘마감) 구조를 '동네곳곳' 상점 서비스로 변경
-- 상품 등록 기능: 사진 한 장으로 AI 분석(Mock) 및 모달 확인 후 저장하는 프로세스 구축
-- 상품 목록 기능: 등록된 상품 카드 레이아웃 구현 및 최신/과거순 정렬 기능 추가
-- 백엔드 고도화: 
-    - AI 분석(analyze)과 실제 저장(create) 로직 분리
-    - 이미지 파일 서빙(Media) 설정 및 시리얼라이저 필드 수정
-- 인프라 준비: AWS 배포를 위한 Docker, Nginx, docker-compose 설정 파일 생성
+---
 
-* 🛠️ Tailwind CSS 설정 문제 해결 ㅗ^^ㅗ
-1. 문제 (Problem)
-Tailwind 클래스가 화면에 전혀 반영되지 않고 UI가 깨짐.
-빌드 도구(Vite)에서 CSS 파일을 인식하지 못하는 에러 발생.
+## 📌 소개
 
-2. 원인 (Cause)
-버전 충돌: Tailwind v3와 v4 설정 방식이 섞여 의존성 꼬임.
-설정 파일 오류: .cjs 확장자 인식 문제 및 PostCSS 플러그인 누락.
+동네 베이커리의 남은 빵을 할인 판매로 연결하여
 
-3. 해결 (Solution)
-초기화: 관련 패키지 삭제 후 최신 버전으로 재설치.
-설정 표준화: postcss.config.js를 표준 JS 포맷으로 수정하여 인식률 제고.
-빌드 통합: vite.config.js에 PostCSS 설정을 직접 주입하여 빌드 프로세스 강제 연결.(이걸로 거의 해결)
+* 사장님은 재고를 줄이고
+* 사용자는 저렴하게 구매할 수 있도록 만든 서비스입니다.
 
-4. 결과 (Insight)
-프론트엔드 **빌드 파이프라인(Vite → PostCSS → Tailwind)**의 작동 원리를 깊이 이해하게 됨.
-환경 변화에 대응하는 디버깅 역량과 설정 표준화의 중요성을 체득함.
-인생은 쓰고 성공은 달다. 이 성공을 맛보려고 그렇게 달려온게 후회되지 않는다.💋
+---
+
+## 🖼️ 화면
+
+### 메인 화면
+
+![메인1](./images/main_1.png)
+![메인2](./images/main_2.png)
+![메인3](./images/main_3.png)
+
+### 장바구니
+
+![장바구니1](./images/cart_1.png)
+
+### 결제
+
+![결제1](./images/pay_1.png)
+
+### 주문서
+
+![주문서](./images/order_1.png)
+
+### 빵 인식 (OCR + AI)
+
+![OCR1](./images/ocr_1.png)
+![OCR2](./images/ocr_2.png)
+
+---
+
+## ⚙️ 주요 기능
+
+* 위치 기반 매장 조회
+* 할인 빵 리스트 제공
+* 장바구니 및 주문 기능
+* 재고 관리 및 자동 차감
+* OCR + 객체 탐지 기반 빵 인식
+
+---
+
+## 🧠 핵심 구현
+
+### 1. 빵 인식 파이프라인
+
+```
+OCR → 네임택 탐지 → 이미지 분류
+```
+
+### 2. Product 기반 데이터 구조
+
+* 상품명 / OCR / AI 분류를 하나의 기준(Product)으로 통일
+
+```python
+display_name = serializers.CharField(source='product.display_name', read_only=True)
+```
+
+---
+
+## 🧱 기술 스택
+
+* Backend: Django, DRF
+* Frontend: Vue3
+* AI: Google Vision OCR, Roboflow
+
+---
+
+## 🚀 실행 방법
+
+```bash
+# backend
+python manage.py runserver
+
+# frontend
+npm install
+npm run dev
+```

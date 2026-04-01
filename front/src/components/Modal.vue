@@ -39,10 +39,8 @@ defineEmits(['close']);
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.6);
-
-/* ✨ 뒷배경을 흐리게 만드는 블러 효과 */
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px); /* Safari 등 다른 브라우저 호환성용 */
+  -webkit-backdrop-filter: blur(8px); 
 
   display: flex;
   justify-content: center;
@@ -96,7 +94,6 @@ defineEmits(['close']);
   background-color: #708255;
 }
 
-/* 모달이 나타나고 사라질 때 부드러운 효과 */
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }

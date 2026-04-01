@@ -1,45 +1,33 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-# from .views import StoreListCreateView
-from .views import StoreViewSet #, UserRegistrationView
-# from django.contrib import admin
-# from rest_framework_simplejwt.views import (
-#     TokenObtainPairView,
-#     TokenRefreshView,
-# )
-# from diary.views import UserRegistrationView
+from .views import (
+    ShelfScanningView, BulkProductSaveView, DiscountProductListView, 
+    UpdateCountView, StoreViewSet, DiscountProductViewSet, 
+    ProductListCreateView, ProductDetailView,
+    login_view, signup_view
+)
+from . import views
 
-# urlpatterns = [
-#     path('stores/', StoreListCreateView.as_view(), name='store-list-create'),
-# ]
-
-# 목적 : api경로 설정
-
-# 라우터를 사용하여 /diaries/ 경로를 설정
 router = DefaultRouter()
-router.register(r'stores', StoreViewSet) #, basename='store')
+router.register(r'stores', StoreViewSet, basename='store')
+router.register(r'discounts', DiscountProductViewSet, basename='discountproduct')
 
-# diary 앱과 관련된 URL만 남겨두고 하나로 합침
 urlpatterns = [
+    path('detect/', ShelfScanningView.as_view(), name='detect'),
+    path('api/detect/', ShelfScanningView.as_view(), name='shelf_scanning'),
     path('', include(router.urls)),
-
-    # # 회원가입 URL (/api/register/)
-    # path('register/', UserRegistrationView.as_view(), name='register'), 
-
-    # # JWT 토큰 발급/갱신 URL
-    # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    # # DRF 기본 로그인/로그아웃 뷰 (테스트용으로 유용)
-    # path('auth/', include('rest_framework.urls')),
-
+    path('save-products/', BulkProductSaveView.as_view(), name='save_products'),
+    path('list/', DiscountProductListView.as_view(), name='product_list'),
+    path('update-count/<int:pk>/', UpdateCountView.as_view(), name='update_count'),
+    path('api/', include(router.urls)),
+    path('api/create-order/', views.create_order),
+    path('api/my-orders/', views.get_my_orders),
+    path('api/get-orders/', views.get_orders),
+    path('api/complete-order/<int:order_id>/', views.complete_order),
+    path('api/order-status/<int:order_id>/', views.get_order_status),
+    path('products/', ProductListCreateView.as_view(), name='product-list-create'),
+    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
+    path('api/auth/login/', login_view, name='login'),
+    path('api/auth/signup/', signup_view, name='signup'),
+    
 ]
-
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('api/diary/', include('diary.urls')),
-#     path('api-auth/', include('rest_framework.urls')),
-#     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-#     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-#     path('api/register/', UserRegistrationView.as_view(), name='register'),
-# ]

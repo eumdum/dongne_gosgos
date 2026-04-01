@@ -15,7 +15,6 @@ export default createStore({
   },
   actions: {
     addDiary({ commit }, diary) {
-      // 여기서 감정분석 API를 호출할 수 있습니다
       commit('ADD_DIARY', diary)
     }
   },
