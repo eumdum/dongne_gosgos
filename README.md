@@ -17,26 +17,26 @@
 
 ### 메인 화면
 
-![메인1](./images/main_1.png)
-![메인2](./images/main_2.png)
-![메인3](./images/main_3.png)
+![메인1](./images/main_1.PNG)
+![메인2](./images/main_2.PNG)
+![메인3](./images/main_3.PNG)
 
 ### 장바구니
 
-![장바구니1](./images/cart_1.png)
+![장바구니1](./images/cart_1.PNG)
 
 ### 결제
 
-![결제1](./images/pay_1.png)
+![결제1](./images/pay_1.PNG)
 
 ### 주문서
 
-![주문서](./images/order_1.png)
+![주문서](./images/order_1.PNG)
 
 ### 빵 인식 (OCR + AI)
 
-![OCR1](./images/ocr_1.png)
-![OCR2](./images/ocr_2.png)
+![OCR1](./images/ocr_1.PNG)
+![OCR2](./images/ocr_2.PNG)
 
 ---
 
