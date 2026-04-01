@@ -18,9 +18,9 @@
 ### 메인 화면
 
 <p align="center">
-  <img src="./images/main_1.PNG" width="250"/>
-  <img src="./images/main_2.PNG" width="250"/>
-  <img src="./images/main_3.PNG" width="250"/>
+  <img src="./images/main_1.PNG" width="300"/>
+  <img src="./images/main_2.PNG" width="300"/>
+  <img src="./images/main_3.PNG" width="300"/>
 </p>
 
 ### 장바구니
