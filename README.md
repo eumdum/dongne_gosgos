@@ -50,7 +50,7 @@ OCR 및 객체 탐지 기반 자동 인식 기능을 도입
 
 ### 메인 화면
 
-<p align="center">
+<p align="left">
   <img src="./images/main_1.PNG" width="300"/>
   <img src="./images/main_2.PNG" width="300"/>
   <img src="./images/main_3.PNG" width="300"/>
@@ -58,25 +58,25 @@ OCR 및 객체 탐지 기반 자동 인식 기능을 도입
 
 ### 장바구니
 
-<p align="center">
+<p align="left">
   <img src="./images/cart_1.PNG" width="300"/>
 </p>
 
 ### 결제
 
-<p align="center">
+<p align="left">
   <img src="./images/pay_1.PNG" width="300"/>
 </p>
 
 ### 주문서
 
-<p align="center">
+<p align="left">
   <img src="./images/order_1.PNG" width="300"/>
 </p>
 
 ### 빵 인식 (OCR + AI)
 
-<p align="center">
+<p align="left">
   <img src="./images/ocr_1.PNG" width="300"/>
   <img src="./images/ocr_2.PNG" width="300"/>
 </p>
