@@ -28,5 +28,12 @@ media/
 
 .env
 
-# Google Cloud API Key
 google_key.json
+
+*.pem
+dongne-gosgos-key.pem
+
+.docker/
+*.log
+docker-compose.override.yml
+
