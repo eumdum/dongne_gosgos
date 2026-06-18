@@ -37,3 +37,5 @@ dongne-gosgos-key.pem
 *.log
 docker-compose.override.yml
 
+.idea/
+
