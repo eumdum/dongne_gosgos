@@ -14,10 +14,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
-DEBUG = env('DEBUG')
+DEBUG = env.bool('DEBUG', default=False)
 
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')  #도메인 따면 변경
+ALLOWED_HOSTS = ['3.39.231.97', 'localhost', '127.0.0.1', 'db']
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -68,13 +68,14 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True 
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.loca.lt',
-    'https://*.ngrok-free.dev' 
+    'http://3.39.231.97',
+    'http://3.39.231.97:8000' 
 ]
 
-CORS_ALLOW_ALL_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000",
     "http://localhost:8080",
-    "http://127.0.0.1:8080",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -105,24 +106,16 @@ WSGI_APPLICATION = "back.wsgi.application"
 
 hostname = socket.gethostname()
 
-if hostname == 'DESKTOP-MQU1UBG':    # 노트북으로 할떄
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = { 
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST', default='db'),
+        'PORT': '3306',
     }
-else:
-    DATABASES = {   # 컴퓨터로 할떄
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST', default='localhost'),
-            'PORT': env('DB_PORT', default='3306'),
-        }
-    }
+}
 
 
 # Password validation
