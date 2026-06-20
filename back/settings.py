@@ -17,7 +17,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
 
-ALLOWED_HOSTS = ['13.125.205.250', 'localhost', '127.0.0.1', 'db']
+ALLOWED_HOSTS = ['13.125.242.170', 'localhost', '127.0.0.1', 'db']
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -68,8 +68,8 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True 
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://13.125.205.250',
-    'http://13.125.205.250:8000' 
+    'http://13.125.242.170',
+    'http://13.125.242.170:8000' 
 ]
 
 CORS_ALLOWED_ORIGINS = [
