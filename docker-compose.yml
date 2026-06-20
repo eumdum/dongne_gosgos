@@ -27,5 +27,12 @@ services:
     depends_on:
       - db
 
+  frontend:
+    build: ./front
+    ports:
+      - "3000:3000"
+    depends_on:
+      - web
+
 volumes:
   mysql_data:
