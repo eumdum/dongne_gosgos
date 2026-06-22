@@ -92,7 +92,7 @@
             <div v-for="item in selectedShop.discounts" :key="item.id" class="bread-item">
               <span class="bread-emoji">🥐</span>
               <div class="bread-info">
-                <div class="name">{{ item.name }}</div>
+                <div class="name">{{ item.display_name }}</div>
                 <div class="price-row">
                   <span class="old">{{ item.original_price?.toLocaleString() }}원</span>
                   <span class="new">{{ item.discount_price?.toLocaleString() }}원</span>
@@ -138,7 +138,7 @@ const isFetching = ref(true);
 const viewType = ref('list');
 const shops = ref([]);
 const expandedShopId = ref(null);
-const userCoords = ref({ lat: 37.359, lng: 127.105 }); // 기본값 (네이버 본사)
+const userCoords = ref({ lat: 37.359, lng: 127.105 }); // ✨ GPS 실패 시 백업용 기본값 (네이버 본사)
 const selectedShop = ref(null);
 const isMapPanelOpen = ref(false);
 const cart = ref([]);
@@ -161,6 +161,7 @@ const getAvailableCount = (shop) => {
   return shop.discounts?.filter(item => item.count > 0 && !item.is_sold_out).length || 0;
 };
 
+// 카카오맵 스크립트를 안전하게 로드하는 정석 함수
 const loadKakaoMapScript = () => {
   return new Promise((resolve, reject) => {
     if (window.kakao && window.kakao.maps) {
@@ -169,99 +170,96 @@ const loadKakaoMapScript = () => {
     }
 
     const existingScript = document.getElementById('kakao-map-script');
-
     if (existingScript) {
-      existingScript.addEventListener('load', () => {
-        window.kakao.maps.load(() => resolve());
-      });
+      existingScript.addEventListener('load', () => resolve());
       return;
     }
 
     const script = document.createElement('script');
     script.id = 'kakao-map-script';
+    // 💡 백엔드 환경변수에 저장해둔 카카오 키를 안전하게 주입합니다!
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_KEY}&libraries=services&autoload=false`;
-    script.onload = () => {
-      window.kakao.maps.load(() => resolve());
-    };
+    script.onload = () => resolve();
     script.onerror = () => reject(new Error('카카오맵 스크립트 로드 실패'));
     document.head.appendChild(script);
   });
 };
 
+// 🗺️ 지도 탭 클릭 시 실행되는 핵심 함수 (순서 최적화!)
 const handleMapTab = async () => {
   viewType.value = 'map';
   selectedShop.value = null;
-  await nextTick();
+  await nextTick(); // Vue가 지도 div(#kakao-map)를 화면에 그릴 때까지 대기!
 
   try {
     await loadKakaoMapScript();
-    initKakaoMap();
+    // kakao.maps.load를 여기서 명확히 감싸서 실행 타이밍을 확보합니다!
+    window.kakao.maps.load(() => {
+      initKakaoMap();
+    });
   } catch (error) {
+    console.error("카카오 지도 로드 중 에러 발생:", error);
   }
 };
 
+// 🎨 진짜 지도를 그리는 함수
 const initKakaoMap = () => {
-  if (!window.kakao || !window.kakao.maps) {
-    setTimeout(initKakaoMap, 100);
-    return;
-  }
+  const container = document.getElementById('kakao-map');
+  if (!container) return;
 
-  window.kakao.maps.load(() => {
-    const container = document.getElementById('kakao-map');
-    if (!container) return;
-
-    const centerPos = new window.kakao.maps.LatLng(userCoords.value.lat, userCoords.value.lng);
-    
-    const map = new window.kakao.maps.Map(container, {
-      center: centerPos,
-      level: 3
-    });
-
-    // 내 위치
-    const myPosImage = new window.kakao.maps.MarkerImage(
-      'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-      new window.kakao.maps.Size(35, 35)
-    );
-    
-    new window.kakao.maps.Marker({
-      position: centerPos,
-      image: myPosImage,
-      map: map
-    });
-
-    filteredShops.value.forEach(shop => {
-      const saleCount = getAvailableCount(shop);
-      
-      const shopPos = new window.kakao.maps.LatLng(shop.lat, shop.lng);
-
-      const content = `
-        <div onclick="handleMarkerClick(${shop.id})" style="position: relative; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <div style="width: 50px; height: 50px; background: white; border: 2.5px solid #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 4px 4px 0px #222; z-index: 1;">
-            🥐
-          </div>
-          <div style="position: absolute; top: 0px; right: 0px; background: #ef4444; color: white; font-size: 12px; font-weight: 900; min-width: 22px; height: 22px; border-radius: 11px; border: 2px solid #222; display: flex; align-items: center; justify-content: center; z-index: 2; padding: 0 4px; box-sizing: border-box;">
-            ${saleCount}
-          </div>
-        </div>
-      `;
-
-      new window.kakao.maps.CustomOverlay({
-        position: shopPos,
-        content: content,
-        map: map,
-        xAnchor: 0.5,
-        yAnchor: 0.5
-      });
-    });
-
-    window.handleMarkerClick = (id) => {
-      const found = shops.value.find(s => s.id === id);
-      if (found) {
-        selectedShop.value = found;
-        isMapPanelOpen.value = true;
-      }
-    };
+  // GPS 잡기 실패 시 채워진 기본값(네이버 본사) 또는 내 진짜 GPS 좌표가 여기 들어갑니다!
+  const centerPos = new window.kakao.maps.LatLng(userCoords.value.lat, userCoords.value.lng);
+  
+  const map = new window.kakao.maps.Map(container, {
+    center: centerPos,
+    level: 3
   });
+
+  // 빨간색 핀으로 "내 위치" 마커 찍기
+  const myPosImage = new window.kakao.maps.MarkerImage(
+    'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+    new window.kakao.maps.Size(35, 35)
+  );
+  
+  new window.kakao.maps.Marker({
+    position: centerPos,
+    image: myPosImage,
+    map: map
+  });
+
+  // 주변 빵집 마커들 찍기
+  filteredShops.value.forEach(shop => {
+    const saleCount = getAvailableCount(shop);
+    const shopPos = new window.kakao.maps.LatLng(shop.lat, shop.lng);
+
+    const content = `
+      <div onclick="handleMarkerClick(${shop.id})" style="position: relative; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <div style="width: 50px; height: 50px; background: white; border: 2.5px solid #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 4px 4px 0px #222; z-index: 1;">
+          🥐
+        </div>
+        <div style="position: absolute; top: 0px; right: 0px; background: #ef4444; color: white; font-size: 12px; font-weight: 900; min-width: 22px; height: 22px; border-radius: 11px; border: 2px solid #222; display: flex; align-items: center; justify-content: center; z-index: 2; padding: 0 4px; box-sizing: border-box;">
+          ${saleCount}
+        </div>
+      </div>
+    `;
+
+    new window.kakao.maps.CustomOverlay({
+      position: shopPos,
+      content: content,
+      map: map,
+      xAnchor: 0.5,
+      yAnchor: 0.5
+    });
+  });
+
+  // 글로벌 윈도우 함수로 마커 클릭 이벤트 매칭
+  window.handleMarkerClick = (id) => {
+    const found = shops.value.find(s => s.id === id);
+    if (found) {
+      selectedShop.value = found;
+      isMapPanelOpen.value = true;
+    }
+  };
 };
 
 const changeTempCount = (item, delta) => {
@@ -305,16 +303,17 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-// GPS 위치 잡기
+// 📍 브라우저 GPS 위치 요청 함수 (HTTPS가 아니면 무조건 실패하고 넘어감!)
 const fetchLocation = () => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve();
+      resolve(); // 지원 안하면 쿨하게 기본값 유지하고 리졸브!
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // HTTPS 환경이거나 개발 로컬 환경일 때 작동!
         userCoords.value = { 
           lat: pos.coords.latitude, 
           lng: pos.coords.longitude 
@@ -322,10 +321,12 @@ const fetchLocation = () => {
         resolve(); 
       },
       (err) => {
-        console.warn("⚠️ 위치 잡기 실패 (기본값 사용):", err.message);
+        // ⚠️ HTTP 상태의 AWS 서버에서는 이쪽으로 무조건 튕겨 나옵니다! 
+        // 기존에 적어둔 { lat: 37.359, lng: 127.105 } 네이버 본사 좌표가 안전하게 보존됩니다.
+        console.warn("위치 잡기 실패 (기본값 분당 네이버 본사 사용):", err.message);
         resolve(); 
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   });
 };
@@ -335,6 +336,7 @@ const fetchStores = async () => {
     const response = await api.get('/api/stores/');
     
     shops.value = response.data.map(shop => {
+      // 위치 잡기 실패 시 네이버 본사 기준 거리 계산, 성공 시 진짜 내 위치 기준 거리 계산!
       const dist = getDistance(userCoords.value.lat, userCoords.value.lng, shop.lat, shop.lng);
       return {
         ...shop,
@@ -343,13 +345,14 @@ const fetchStores = async () => {
       };
     }).sort((a, b) => a.distance - b.distance);
   } catch (e) {
+    console.error("가게 정보 로드 실패:", e);
   }
 };
 
 onMounted(async () => {
   isFetching.value = true;
-  await fetchLocation(); 
-  await fetchStores();
+  await fetchLocation(); // 1. 위치 요청 (안 잡히면 자동으로 네이버 본사 고정!)
+  await fetchStores();   // 2. 그 고정된 좌표 기반으로 가게 가져오기
 
   refreshCart();
   window.addEventListener('focus', refreshCart);
