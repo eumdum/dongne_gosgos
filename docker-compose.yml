@@ -27,13 +27,13 @@ services:
     depends_on:
       - db
 
-  frontend:
-    build: ./front
+  front:
+    build:
+      context: ./front
+      args:
+        - VITE_API_URL=http://${SERVER_IP}:8000
     ports:
       - "3000:3000"
-    environment:
-      # ip변경시 env에서 수정!!!!!!!!!!!!!!!!!!
-      - VITE_API_URL=http://${SERVER_IP}:8000
     depends_on:
       - web
 
