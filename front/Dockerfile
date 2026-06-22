@@ -10,7 +10,8 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
-# 실행 명령어 (Vite가 제공하는 preview 서버를 모든 IP로 열어주기!)
+RUN npm run build
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
