@@ -42,8 +42,16 @@
           <div class="input-group">
             <label>매장 주소</label>
             <div class="address-box">
-              <input v-model="formData.store_address" readonly placeholder="주소를 검색해주세요" class="retro-input">
-              <button type="button" @click="openAddressPopup" class="search-btn">주소 찾기</button>
+              <!-- <input v-model="formData.store_address" readonly placeholder="주소를 검색해주세요" class="retro-input">
+              <button type="button" @click="openAddressPopup" class="search-btn">주소 찾기</button> -->
+              <!-- <input v-model="formData.store_address" @click="openAddressPopup" placeholder="주소를 입력해주세요"> -->
+              <input 
+                v-model="formData.store_address" 
+                @click="openAddressPopup" 
+                readonly 
+                placeholder="클릭해서 주소를 검색하세요" 
+                class="retro-input"
+              >
             </div>
           </div>
         </div>
@@ -131,37 +139,55 @@ const handleSignup = async () => {
   }
 };
 
+// const openAddressPopup = () => {
+//   new window.daum.Postcode({
+//     oncomplete: (data) => {
+//       // 사용자가 선택한 주소 타입(도로명/지번)에 따라 변수 할당
+//       let selectedAddr = '';
+      
+//       if (data.userSelectedType === 'R') {
+//         selectedAddr = data.roadAddress;
+//       } else {
+//         selectedAddr = data.jibunAddress;
+//       }
+
+//       let extraAddr = '';
+//       if (data.userSelectedType === 'R') {
+//         if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+//           extraAddr += data.bname;
+//         }
+//         if (data.buildingName !== '') {
+//           extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+//         }
+//         selectedAddr += (extraAddr !== '' ? ` (${extraAddr})` : '');
+//       }
+
+//       formData.value.store_address = selectedAddr;
+
+//       if (data.buildingName) {
+//         formData.value.store_name = data.buildingName;
+//       }
+
+//       const geocoder = new window.kakao.maps.services.Geocoder();
+//       geocoder.addressSearch(data.address, (result, status) => {
+//         if (status === window.kakao.maps.services.Status.OK) {
+//           formData.value.lat = result[0].y;
+//           formData.value.lng = result[0].x;
+//         }
+//       });
+//     }
+//   }).open();
+// };
 const openAddressPopup = () => {
   new window.daum.Postcode({
     oncomplete: (data) => {
-      // 사용자가 선택한 주소 타입(도로명/지번)에 따라 변수 할당
-      let selectedAddr = '';
-      
-      if (data.userSelectedType === 'R') {
-        selectedAddr = data.roadAddress;
-      } else {
-        selectedAddr = data.jibunAddress;
-      }
-
-      let extraAddr = '';
-      if (data.userSelectedType === 'R') {
-        if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
-          extraAddr += data.bname;
-        }
-        if (data.buildingName !== '') {
-          extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
-        }
-        selectedAddr += (extraAddr !== '' ? ` (${extraAddr})` : '');
-      }
-
+      // 주소 처리 로직
+      let selectedAddr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
       formData.value.store_address = selectedAddr;
-
-      if (data.buildingName) {
-        formData.value.store_name = data.buildingName;
-      }
-
+      
+      // 카카오 좌표 변환
       const geocoder = new window.kakao.maps.services.Geocoder();
-      geocoder.addressSearch(data.address, (result, status) => {
+      geocoder.addressSearch(selectedAddr, (result, status) => {
         if (status === window.kakao.maps.services.Status.OK) {
           formData.value.lat = result[0].y;
           formData.value.lng = result[0].x;
