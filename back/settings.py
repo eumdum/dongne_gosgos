@@ -69,14 +69,18 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'http://13.125.242.170',
-    'http://13.125.242.170:8000' 
+    'http://13.125.242.170:8000',
+    'https://dongne-gosgos.store'
 ]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CORS_ALLOWED_ORIGINS = [
     "http://13.125.242.170:3000",
     "http://localhost:3000",
     "http://localhost:8000",
     "http://localhost:8080",
+    "https://dongne-gosgos.store"    
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
