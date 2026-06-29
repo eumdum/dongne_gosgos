@@ -29,7 +29,8 @@ services:
     build:
       context: ./front
       args:
-        - VITE_API_URL=http://${SERVER_IP}:8000
+        # - VITE_API_URL=http://${SERVER_IP}:8000
+        - VITE_API_URL=https://dongne-gosgos.store
         - VITE_KAKAO_MAP_KEY=${VITE_KAKAO_MAP_KEY}
         - VITE_IMP_KEY=${VITE_IMP_KEY}
         - VITE_CHANNEL_KEY=${VITE_CHANNEL_KEY}
