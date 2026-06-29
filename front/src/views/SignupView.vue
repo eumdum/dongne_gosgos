@@ -186,13 +186,18 @@ const openAddressPopup = () => {
       formData.value.store_address = selectedAddr;
       
       // 카카오 좌표 변환
-      const geocoder = new window.kakao.maps.services.Geocoder();
-      geocoder.addressSearch(selectedAddr, (result, status) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-          formData.value.lat = result[0].y;
-          formData.value.lng = result[0].x;
-        }
-      });
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(selectedAddr, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            formData.value.lat = result[0].y;
+            formData.value.lng = result[0].x;
+          }
+        });
+      } else {
+        console.error("카카오맵 서비스가 아직 로드되지 않았습니다!")
+      }
+      document.querySelector('div[style*="z-index: 9999"]').style.display = 'none';
     }
   }).open();
 };
