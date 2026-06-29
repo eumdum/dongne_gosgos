@@ -17,7 +17,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
 
-ALLOWED_HOSTS = ['13.125.242.170', 'localhost', '127.0.0.1', 'db']
+ALLOWED_HOSTS = ['13.125.242.170', 'localhost', '127.0.0.1', 'db', 'dongne-gosgos.store']
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
