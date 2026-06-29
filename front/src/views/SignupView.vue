@@ -181,23 +181,26 @@ const handleSignup = async () => {
 const openAddressPopup = () => {
   new window.daum.Postcode({
     oncomplete: (data) => {
-      // 주소 처리 로직
+      // 주소 저장
       let selectedAddr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
       formData.value.store_address = selectedAddr;
-      
+
       // 카카오 좌표 변환
-      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-        const geocoder = new window.kakao.maps.services.Geocoder();
-        geocoder.addressSearch(selectedAddr, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            formData.value.lat = result[0].y;
-            formData.value.lng = result[0].x;
-          }
-        });
-      } else {
-        console.error("카카오맵 서비스가 아직 로드되지 않았습니다!")
+      try {
+        if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+          const geocoder = new window.kakao.maps.services.Geocoder();
+          geocoder.addressSearch(selectedAddr, (result, status) => {
+            if (status === window.kakao.maps.services.Status.OK) {
+              formData.value.lat = result[0].y;
+              formData.value.lng = result[0].x;
+            }
+          });
+        } else {
+          console.warn("정상처리안됨(주소창 닫힘오류). 주소만 텍스트로 저장");
+        }
+      } catch (error) {
+        console.error("좌표 변환 중 오류발생.;;;", error);
       }
-      document.querySelector('div[style*="z-index: 9999"]').style.display = 'none';
     }
   }).open();
 };
