@@ -11,7 +11,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    allowedHosts: ['all'],
+    allowedHosts: [
+      'dongne-gosgos.store',
+      'www.dongne-gosgos.store',
+      'localhost',
+      'front'
+    ],
     // host: true,
   },
   resolve: {

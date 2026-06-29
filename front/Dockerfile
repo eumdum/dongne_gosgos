@@ -23,4 +23,4 @@ ARG VITE_CHANNEL_KEY
 ENV VITE_CHANNEL_KEY=$VITE_CHANNEL_KEY
 
 RUN npm run build
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["npm", "run", "preview"]
