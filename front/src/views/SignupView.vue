@@ -18,7 +18,7 @@
           <input v-model="formData.password" type="password" placeholder="비밀번호를 입력해주세요" required>
         </div>
 
-        <div v-if="isOwner" class="owner-fields fade-in">
+        <!-- <div v-if="isOwner" class="owner-fields fade-in">
           <div class="input-group">
             <label class="biz-label">BIZ NO / 사업자 번호</label>
     
@@ -32,6 +32,23 @@
               placeholder="'-' 없이 숫자만 입력"
               class="biz-input"
             >
+          </div> -->
+        <div v-if="isOwner" class="owner-fields fade-in">
+          <div class="input-group">
+            <label class="biz-label">BIZ NO / 사업자 번호</label>
+            <p class="biz-notion">
+              <span class="highlight">⚠️ 사업자 번호를 등록해야 빵 등록 및 판매가 가능합니다! ⚠️</span>
+            </p>
+
+            <div class="biz-input-wrapper" style="display: flex; gap: 10px;">
+              <input
+                v-model="formData.business_number"
+                type="text"
+                placeholder="'-' 없이 숫자만 입력"
+                class="biz-input"
+              >
+              <button type="button" @click="verifyBizNumber" class="verify-btn">확인</button>
+            </div>
           </div>
 
           <div class="input-group">
@@ -87,7 +104,9 @@ import api from '@/api';
 const route = useRoute();
 const router = useRouter();
 
-const isOwner = computed(() => route.query.role === 'owner');
+// const isOwner = computed(() => route.query.role === 'owner');
+const isOwner = ref(false); // 사장님 여부
+const isBizVerified = ref(false);
 
 const address = ref('');
 const lat = ref(null);
@@ -115,9 +134,26 @@ watch(() => route.query.role, (newRole) => {
   formData.value.role = newRole;
 });
 
-const handleSignup = async () => {
+const verifyBizNumber = async () => {
+  const b_no = formData.value.business_number.replace(/-/g, '').trim();
   try {
-    const response = await api.post('/api/auth/signup/', formData.value);
+    await api.post('/api/auth/verify-biz/', { business_number: b_no });
+    isBizVerified.value = true;
+    alert("인증 완료: 등록 가능한 사업자입니다!");
+  } catch (error) {
+    alert(error.response?.data?.error || "유효하지 않은 사업자 번호입니다.");
+  }
+};
+
+const handleSignup = async () => {
+  const payload = { ...formData.value};
+
+  if (isOwner.value) {
+    payload.business_number = String(payload.business_number).replace(/-/g, '').trim();
+    }
+
+  try {
+    const response = await api.post('/api/auth/signup/', payload);
 
     if (response.status === 201) {
       localStorage.setItem('userToken', response.data.access);
@@ -139,45 +175,6 @@ const handleSignup = async () => {
   }
 };
 
-// const openAddressPopup = () => {
-//   new window.daum.Postcode({
-//     oncomplete: (data) => {
-//       // 사용자가 선택한 주소 타입(도로명/지번)에 따라 변수 할당
-//       let selectedAddr = '';
-      
-//       if (data.userSelectedType === 'R') {
-//         selectedAddr = data.roadAddress;
-//       } else {
-//         selectedAddr = data.jibunAddress;
-//       }
-
-//       let extraAddr = '';
-//       if (data.userSelectedType === 'R') {
-//         if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
-//           extraAddr += data.bname;
-//         }
-//         if (data.buildingName !== '') {
-//           extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
-//         }
-//         selectedAddr += (extraAddr !== '' ? ` (${extraAddr})` : '');
-//       }
-
-//       formData.value.store_address = selectedAddr;
-
-//       if (data.buildingName) {
-//         formData.value.store_name = data.buildingName;
-//       }
-
-//       const geocoder = new window.kakao.maps.services.Geocoder();
-//       geocoder.addressSearch(data.address, (result, status) => {
-//         if (status === window.kakao.maps.services.Status.OK) {
-//           formData.value.lat = result[0].y;
-//           formData.value.lng = result[0].x;
-//         }
-//       });
-//     }
-//   }).open();
-// };
 const openAddressPopup = () => {
   new window.daum.Postcode({
     oncomplete: (data) => {
@@ -381,4 +378,10 @@ const openAddressPopup = () => {
   font-size: 0.9rem;
   margin-bottom: 8px;
 }
+
+.biz-input-wrapper { display: flex; gap: 10px; }
+.verify-btn { padding: 5px 15px; background: #222; color: #fff; border-radius: 5px; cursor: pointer; }
+.verify-btn:disabled { background: #ccc; }
+.submit-btn { width: 100%; padding: 15px; background: #D57B0E; color: white; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; }
+.submit-btn:disabled { background: #ccc; cursor: not-allowed; }
 </style>
