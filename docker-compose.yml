@@ -36,6 +36,8 @@ services:
         - VITE_CHANNEL_KEY=${VITE_CHANNEL_KEY}
     ports:
       - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - web
 
