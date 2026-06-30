@@ -104,8 +104,8 @@ import api from '@/api';
 const route = useRoute();
 const router = useRouter();
 
-// const isOwner = computed(() => route.query.role === 'owner');
-const isOwner = ref(false); // 사장님 여부
+const isOwner = computed(() => route.query.role === 'owner');
+// const isOwner = ref(false); // 사장님 여부
 const isBizVerified = ref(false);
 
 const address = ref('');
@@ -125,9 +125,14 @@ const formData = ref({
   lng: null,
 });
 
+// const switchRole = (newRole) => {
+//   router.push({ query: { role: newRole } });
+//   formData.value.role = newRole;
+// };
+
 const switchRole = (newRole) => {
+  formData.value.role = newRole; // 역할 업데이트
   router.push({ query: { role: newRole } });
-  formData.value.role = newRole;
 };
 
 watch(() => route.query.role, (newRole) => {
