@@ -5,6 +5,23 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .utils import verify_business_number
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_biz(request):
+    b_no = request.data.get('business_number', '').replace('-', '').strip()
+    
+    if not b_no or len(b_no) != 10:
+        return Response({"error": "10자리 사업자 번호를 입력해주세요."}, status=400)
+    
+    is_valid, status_msg = verify_business_number(b_no)
+    
+    if is_valid:
+        return Response({"message": f"사용 가능한 사업자입니다 ({status_msg})"}, status=200)
+    else:
+        return Response({"error": f"가입 불가: {status_msg}"}, status=400)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
@@ -21,22 +38,28 @@ def signup(request):
         return Response({"error": "이미 사용중인 아이디입니다."}, status=400)
     
     try:
-        if role == 'owner':
-            if not b_no or len(b_no) != 10:
-                return Response({"error": "사업자 번호를 다시 확인해주세요."}, status=400)
-            if not verify_business_number(b_no):
-                return Response({"error": "유효하지 않은 사업자 번호입니다."}, status=400)
-            if User.objects.filter(business_number=b_no).exists():
-                return Response({"error": "이미 등록된 사업자 번호입니다."}, status=400)
+        user = User.objects.create_user(username=username, password=password, is_owner=(role == 'owner'))
 
-        user = User.objects.create_user(    # 손님으로 등록시 기본 생성 항목
-            username=username,
-            password=password,
-            is_owner=(role == 'owner'),
-            # phone_number=data.get('phone_number', '')
-        )
+        if role == 'owner':
+        #     if not b_no or len(b_no) != 10:
+        #         return Response({"error": "사업자 번호를 다시 확인해주세요."}, status=400)
+        #     if not verify_business_number(b_no):
+        #         return Response({"error": "유효하지 않은 사업자 번호입니다."}, status=400)
+        #     if User.objects.filter(business_number=b_no).exists():
+        #         return Response({"error": "이미 등록된 사업자 번호입니다."}, status=400)
+
+        # user = User.objects.create_user(    # 손님으로 등록시 기본 생성 항목
+        #     username=username,
+        #     password=password,
+        #     is_owner=(role == 'owner'),
+        #     # phone_number=data.get('phone_number', '')
+        # )
         
-        if role == 'owner':     # 사장님으로 등록시 기본 생성 항목
+            is_valid, msg = verify_business_number(b_no)
+            if not is_valid:
+                user.delete()
+                return Response({"error": f"사업자 번호 검증에 실패했습니다.{msg}"}, status=400)
+
             user.business_number = b_no
             user.store_name = data.get('store_name')
             user.store_address = data.get('store_address')
@@ -57,17 +80,3 @@ def signup(request):
     except Exception as e:
         return Response({"error": f"가입 중 오류 발생: {str(e)}"}, status=500)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def verify_biz(request):
-    b_no = request.data.get('business_number', '').replace('-', '').strip()
-    
-    if not b_no or len(b_no) != 10:
-        return Response({"error": "10자리 사업자 번호를 입력해주세요."}, status=400)
-    
-    is_valid, status_msg = verify_business_number(b_no)
-    
-    if is_valid:
-        return Response({"message": f"사용 가능한 사업자입니다 ({status_msg})"}, status=200)
-    else:
-        return Response({"error": f"가입 불가: {status_msg}"}, status=400)

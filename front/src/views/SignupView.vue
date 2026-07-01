@@ -52,12 +52,12 @@
           </div>
 
           <div class="input-group">
-            <label>SHOP NAME / 가게 이름</label>
+            <label>STORE NAME / 가게 이름</label>
             <input v-model="formData.store_name" type="text" placeholder="가게 이름을 입력하세요">
           </div>
 
           <div class="input-group">
-            <label>매장 주소</label>
+            <label>STORE ADDRESS / 매장 주소</label>
             <div class="address-box">
               <!-- <input v-model="formData.store_address" readonly placeholder="주소를 검색해주세요" class="retro-input">
               <button type="button" @click="openAddressPopup" class="search-btn">주소 찾기</button> -->
@@ -387,6 +387,4 @@ const openAddressPopup = () => {
 .biz-input-wrapper { display: flex; gap: 10px; }
 .verify-btn { padding: 5px 15px; background: #222; color: #fff; border-radius: 5px; cursor: pointer; }
 .verify-btn:disabled { background: #ccc; }
-.submit-btn { width: 100%; padding: 15px; background: #D57B0E; color: white; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; }
-.submit-btn:disabled { background: #ccc; cursor: not-allowed; }
 </style>
