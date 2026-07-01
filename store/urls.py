@@ -27,7 +27,7 @@ urlpatterns = [
     path('api/order-status/<int:order_id>/', views.get_order_status),
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
     path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
-    path('api/auth/login/', login_view, name='login'),
-    path('api/auth/signup/', signup_view, name='signup'),
+    # path('api/auth/login/', login_view, name='login'),
+    # path('api/auth/signup/', signup_view, name='signup'),
     
 ]
