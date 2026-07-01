@@ -22,11 +22,11 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_key.json"
 rf = Roboflow(api_key=env('ROBOFLOW_API_KEY'))
 
 # 네임텍 전용 모델
-rf_project_tag = rf.workspace().project("name-tag-hzadd")
-rf_model_tag = rf_project_tag.version(2).model
+# rf_project_tag = rf.workspace().project("name-tag-hzadd")
+# rf_model_tag = rf_project_tag.version(2).model
 
-rf_project_bread = rf.workspace().project("1_redbeen-bread")
-rf_model_bread = rf_project_bread.version(5).model
+# rf_project_bread = rf.workspace().project("1_redbeen-bread")
+# rf_model_bread = rf_project_bread.version(5).model
 
 
 def normalize_text(text):
