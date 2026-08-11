@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 from .models import DiscountProduct, Store, Order, Product
 from .serializers import StoreSerializer, DiscountProductSerializer, ProductSerializer
 from .detect_views import ShelfScanningView
+import re
 
 
 class BulkProductSaveView(APIView):
@@ -123,8 +124,33 @@ def get_my_store(user):
 
 # 가게 목록 및 등록
 class StoreViewSet(viewsets.ModelViewSet):
-    queryset = Store.objects.all()
     serializer_class = StoreSerializer
+
+    def get_queryset(self):
+        queryset = Store.objects.all()
+
+        sido = self.request.query_params.get('sido')
+        sigg = self.request.query_params.get('sigg')
+        dong = self.request.query_params.get('dong')
+
+        # 시/도 필터링
+        if sido:
+            clean_sido = sido[:2]
+            queryset = queryset.filter(store_address__icontains=clean_sido)
+
+        # 시/군/구 필터링
+        if sigg:
+            clean_sigg = sigg.replace('구', '').replace('시', '').strip() if len(sigg) > 2 else sigg
+            clean_sigg = clean_sigg.split()[-1] # 공백이 있을 경우 마지막 단어만 추출
+            queryset = queryset.filter(store_address__icontains=clean_sigg)
+
+        # 읍/면/동 필터링 
+        if dong:
+            clean_dong = re.sub(r'[0-9동가리]', '', dong).strip()
+            if clean_dong:
+                queryset = queryset.filter(store_address__icontains=clean_dong)
+
+        return queryset
 
 
 # 할인 상품 목록 및 등록
@@ -139,13 +165,20 @@ class DiscountProductViewSet(viewsets.ModelViewSet):
 
 # 재고차감 로직
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_order(request):
+    user = request.user
     data = request.data
+    shop_name = data.get('shop_name')
+
+    if hasattr(user, 'store'):
+        if user.store.store_name == shop_name:
+            return Response({"error": "사장님은 본인 가게의 상품을 구매할 수 없습니다."}, status=400)
     
     order = Order.objects.create(
         pickup_number=data.get('pickup_number'),
         customer_name=data.get('customer_name', '손님1'),
-        shop_name=data.get('shop_name'),
+        shop_name=shop_name,
         items_summary=data.get('items_summary'),
         total_price=data.get('total_price'),
         status=data.get('status', '결제완료'),
@@ -266,7 +299,7 @@ def get_orders(request):
 def complete_order(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
-        order.status = "픽업완료" # 🌟 상태 변경!
+        order.status = "픽업완료" # 상태 변경!
         order.save()
         return Response({"message": "픽업이 완료되었습니다."})
     except Order.DoesNotExist:
@@ -285,74 +318,3 @@ def test_upload_page(request):
     return render(request, 'test_upload.html')
 
 User = get_user_model()
-
-
-@api_view(['POST'])
-def signup_view(request):
-    data = request.data 
-    
-    try:
-        u_name = data.get('username')
-        u_pwd = data.get('password')
-        u_role = data.get('role', 'user')
-        u_nick = data.get('nickname')
-
-        if User.objects.filter(username=u_name).exists():
-            return Response({"error": "이미 사용 중인 아이디입니다."}, status=400)
-
-        if not u_nick or u_nick.strip() == "":
-            import random
-            suffix = f"{random.randint(1000, 9999)}"
-            u_nick = f"사장님{suffix}" if u_role == 'owner' else f"손님{suffix}"
-
-        user = User.objects.create_user(
-            username=u_name, 
-            password=u_pwd, 
-            first_name=u_nick
-        )
-
-        if u_role == 'owner':
-            Store.objects.create(
-                owner=user, 
-                store_name=data.get('store_name', ''), 
-                store_address=data.get('store_address', ''), 
-                lat=data.get('lat'), 
-                lng=data.get('lng'),
-            )
-
-        refresh = RefreshToken.for_user(user)
-
-        return Response({
-            "message": "회원가입 및 로그인 성공!",
-            "access": str(refresh.access_token),
-            "nickname": u_nick,
-            "username": u_name,
-            "role": u_role
-        }, status=201)
-
-    except Exception as e:
-        print(f"회원가입 에러 발생: {str(e)}") # 서버 터미널에서 에러 확인용
-        return Response({"error": "회원가입 처리 중 오류가 발생했습니다."}, status=400)
-
-
-@api_view(['POST'])
-def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    
-    user = authenticate(username=username, password=password)
-    
-    if user:
-        refresh = RefreshToken.for_user(user)
-
-        user_role = 'owner' if '사장님' in user.first_name else 'user'
-
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'nickname': user.first_name if user.first_name else user.username,
-            'role': user_role,
-            'username': user.username
-        }, status=status.HTTP_200_OK)
-    else:
-        return Response({"error": "아이디 또는 비밀번호가 틀렸습니다."}, status=status.HTTP_401_UNAUTHORIZED)

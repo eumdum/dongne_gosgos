@@ -57,7 +57,6 @@ class Product(models.Model):
         verbose_name="설명"
     )
 
-    # 판매 여부
     is_active = models.BooleanField(default=True, verbose_name="사용 여부")
 
     created_at = models.DateTimeField(auto_now_add=True)

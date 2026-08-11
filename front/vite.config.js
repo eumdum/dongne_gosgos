@@ -17,6 +17,14 @@ export default defineConfig({
       'localhost',
       'front'
     ],
+    // 로컬 개발용 프록시
+    proxy: {
+      '/sgis-api': {
+        target: 'https://sgisapi.kostat.go.kr',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sgis-api/, '')
+      }
+    }
     // host: true,
   },
   resolve: {

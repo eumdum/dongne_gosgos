@@ -1,6 +1,6 @@
 <template>
   <div v-if="isOwnerChecked" class="mypage-container">
-    <h2 class="mypage-title">🥐 사장님 메뉴</h2>
+    <h2 class="mypage-title">🥐 마이페이지</h2>
 
     <div class="owner-gate-container">
       <button class="choice-card pickup" @click="goPath('/pickup')">

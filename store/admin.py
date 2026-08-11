@@ -9,14 +9,19 @@ class DiscountProductInline(admin.TabularInline):
     model = DiscountProduct
     extra = 1
 
+
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
     list_display = ('store_name', 'store_address', 'lat', 'lng', 'owner')
     inlines = [ProductInline, DiscountProductInline]
 
-admin.site.register(DiscountProduct)
-admin.site.register(Product)
+@admin.register(DiscountProduct)
+class DiscountProductAdmin(admin.ModelAdmin):
+    list_display = ('product', 'store', 'count', 'is_sold_out')
 
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('display_name', 'price', 'store')
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):

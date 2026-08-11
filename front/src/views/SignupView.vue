@@ -40,7 +40,7 @@
               <span class="highlight">⚠️ 사업자 번호를 등록해야 빵 등록 및 판매가 가능합니다! ⚠️</span>
             </p>
 
-            <div class="biz-input-wrapper" style="display: flex; gap: 10px;">
+            <!-- <div class="biz-input-wrapper" style="display: flex; gap: 10px;">
               <input
                 v-model="formData.business_number"
                 type="text"
@@ -48,6 +48,23 @@
                 class="biz-input"
               >
               <button type="button" @click="verifyBizNumber" class="verify-btn">확인</button>
+            </div> -->
+
+            <div class="biz-input-wrapper" style="display: flex; gap: 10px;">
+              <input
+                v-model="formData.business_number"
+                @input="isBizVerified = false" 
+                type="text" 
+                placeholder="'-' 없이 숫자만 입력"
+                class="biz-input"
+              />
+              <button 
+                type="button" 
+                @click="verifyBizNumber" 
+                :class="['verify-btn', { 'verified': isBizVerified }]"
+              >
+                {{ isBizVerified ? '✓' : '확인' }}
+              </button>
             </div>
           </div>
 
@@ -119,7 +136,6 @@ const formData = ref({
   business_number: '',
   store_name: '',
   store_address: '',
-  store_name:'',
   nickname: '',
   lat: null,
   lng: null,
@@ -136,33 +152,58 @@ const switchRole = (newRole) => {
 };
 
 watch(() => route.query.role, (newRole) => {
-  formData.value.role = newRole;
+  formData.value.role = newRole || 'user';
 });
 
+// 사업자 번호 인증
 const verifyBizNumber = async () => {
   const b_no = formData.value.business_number.replace(/-/g, '').trim();
+
+  if (!b_no) {
+    alert("사업자 번호를 입력해주세요.");
+    return;
+  }
+
   try {
     await api.post('/api/auth/verify-biz/', { business_number: b_no });
     isBizVerified.value = true;
     alert("인증 완료: 등록 가능한 사업자입니다!");
   } catch (error) {
+    isBizVerified.value = false;
     alert(error.response?.data?.error || "유효하지 않은 사업자 번호입니다.");
   }
 };
 
+// 회원가입 처리
 const handleSignup = async () => {
   const payload = { ...formData.value};
 
   if (isOwner.value) {
-    payload.business_number = String(payload.business_number).replace(/-/g, '').trim();
+    //payload.business_number = String(payload.business_number).replace(/-/g, '').trim();
+    const cleanBizNo = String(payload.business_number || '').replace(/-/g, '').trim();  
+    
+    // ""로 보내면 UNIQUE 제약조건 오류발생함
+    // 그래서 null값 예외처리해줘야함ㅗ
+    if (!cleanBizNo) {
+      delete payload.business_number; 
+    } else {
+      payload.business_number = cleanBizNo;
     }
+  } else {
+    // 일반 사용자일 경우 사장님 관련 필드 삭제
+    delete payload.business_number;
+    delete payload.store_name;
+    delete payload.store_address;
+    delete payload.lat;
+    delete payload.lng;
+  }
 
   try {
     const response = await api.post('/api/auth/signup/', payload);
 
-    if (response.status === 201) {
+    if (response.status === 201 || response.status === 200) {
       localStorage.setItem('userToken', response.data.access);
-      localStorage.setItem('userName', response.data.nickname);
+      localStorage.setItem('userName', response.data.nickname || response.data.username);
       localStorage.setItem('userRole', response.data.role);
 
       let welcomeMsg = `${response.data.nickname}님, 환영합니다! 가입과 동시에 로그인되었어요! 🥐`;
@@ -175,33 +216,70 @@ const handleSignup = async () => {
       window.location.href = '/'; 
     }
   } catch (error) {
-    const errorMsg = error.response?.data?.error || "가입 중 오류가 발생했습니다.";
+    const errorMsg = error.response?.data?.error || error.response?.data?.message || "가입 중 오류가 발생했습니다.";
     alert(errorMsg);
   }
 };
 
+// 주소 검색팝업
+// const openAddressPopup = () => {
+//   new window.daum.Postcode({
+//     oncomplete: (data) => {
+//       // 주소 저장
+//       let selectedAddr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+//       formData.value.store_address = selectedAddr;
+
+//       // 카카오 좌표 변환
+//       try {
+//         if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+//           const geocoder = new window.kakao.maps.services.Geocoder();
+//           geocoder.addressSearch(selectedAddr, (result, status) => {
+//             if (status === window.kakao.maps.services.Status.OK) {
+//               formData.value.lat = result[0].y;
+//               formData.value.lng = result[0].x;
+//             }
+//           });
+//         } else {
+//           console.warn("정상처리안됨(주소창 닫힘오류). 주소만 텍스트로 저장");
+//         }
+//       } catch (error) {
+//         console.error("좌표 변환 중 오류발생.;;;", error);
+//       }
+//     }
+//   }).open();
+// };
 const openAddressPopup = () => {
   new window.daum.Postcode({
     oncomplete: (data) => {
-      // 주소 저장
-      let selectedAddr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
-      formData.value.store_address = selectedAddr;
+      // 📍 사용자가 무얼 눌렀든 '지번 주소'를 우선 가져오기 (없으면 autoJibunAddress 사용)
+      const jibunAddr = data.jibunAddress || data.autoJibunAddress || data.address;
 
-      // 카카오 좌표 변환
+      // 📍 지번 주소에서 '동' 명칭만 추출 (예: "서울 서초구 잠원동 54-5" -> "잠원동")
+      let dongOnly = data.bname;
+      if (!dongOnly) {
+        const match = jibunAddr.match(/([가-힣]+(동|가|리))\b/);
+        dongOnly = match ? match[1] : (data.hName || '');
+      }
+
+      // 1. 무조건 지번 주소 형태로 할당! (예: 서울 서초구 잠원동 54-5)
+      formData.value.store_address = jibunAddr; 
+      
+      // 2. SGIS 필터링용 '동' 명칭 할당 (예: 잠원동)
+      formData.value.dong_name = dongOnly;
+
+      // 3. 카카오 지도 좌표 변환 (지번 주소로 변환)
       try {
         if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
           const geocoder = new window.kakao.maps.services.Geocoder();
-          geocoder.addressSearch(selectedAddr, (result, status) => {
+          geocoder.addressSearch(jibunAddr, (result, status) => {
             if (status === window.kakao.maps.services.Status.OK) {
-              formData.value.lat = result[0].y;
-              formData.value.lng = result[0].x;
+              formData.value.lat = parseFloat(result[0].y);
+              formData.value.lng = parseFloat(result[0].x);
             }
           });
-        } else {
-          console.warn("정상처리안됨(주소창 닫힘오류). 주소만 텍스트로 저장");
         }
       } catch (error) {
-        console.error("좌표 변환 중 오류발생.;;;", error);
+        console.error("좌표 변환 중 오류:", error);
       }
     }
   }).open();
@@ -387,4 +465,23 @@ const openAddressPopup = () => {
 .biz-input-wrapper { display: flex; gap: 10px; }
 .verify-btn { padding: 5px 15px; background: #222; color: #fff; border-radius: 5px; cursor: pointer; }
 .verify-btn:disabled { background: #ccc; }
+
+.verify-btn { 
+  padding: 8px 15px; 
+  background: #D57B0E; 
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #222;
+  color: #fff; 
+  border: none;
+  border-radius: 5px; 
+  cursor: pointer; 
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+/* 인증 완료 상태일 때 스타일 */
+.verify-btn.verified {
+  background: #27ae60 !important; /* 녹색으로 변경 */
+  color: white;
+}
 </style>

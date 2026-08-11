@@ -2,6 +2,30 @@
   <div class="app-container">
     <header class="app-header">
       <h1 class="main-title">우리 동네<br><span class="orange-text">마감 세일</span> 빵집</h1>
+
+      <div class="region-select-container">
+        <select v-model="selectedSido" @change="onSidoChange" class="region-select">
+          <option value="">시/도 선택</option>
+          <option v-for="item in sidoList" :key="item.cd" :value="item.addr_name">
+            {{ item.addr_name }}
+          </option>
+        </select>
+
+        <select v-model="selectedSigg" @change="onSiggChange" :disabled="!selectedSido" class="region-select">
+          <option value="">시/군/구 선택</option>
+          <option v-for="item in siggList" :key="item.cd" :value="item.addr_name">
+            {{ item.addr_name }}
+          </option>
+        </select>
+
+        <select v-model="selectedDong" @change="onDongChange" :disabled="!selectedSigg" class="region-select">
+          <option value="">읍/면/동 선택</option>
+          <option v-for="item in dongList" :key="item.cd" :value="item.addr_name">
+            {{ item.addr_name }}
+          </option>
+        </select>
+      </div>
+
       <div class="tab-menu">
         <button @click="viewType = 'list'" :class="{ active: viewType === 'list' }">📋 리스트</button>
         <button @click="handleMapTab" :class="{ active: viewType === 'map' }">🗺️ 지도</button>
@@ -15,17 +39,16 @@
         </div>
       </div>
 
-
       <template v-else>
         <template v-if="filteredShops.length > 0">
           <div v-for="shop in filteredShops" :key="shop.id" class="shop-card-wrapper">
             <div class="shop-main-info" @click="toggleAccordion(shop.id)">
               <div class="shop-text">
                 <span class="badge">
-                  {{ shop.distance < 1000 ? Math.round(shop.distance) + 'm' : (shop.distance / 1000).toFixed(1) + 'km'
-                  }} </span>
-                    <h2 class="shop-title">{{ shop.store_name }}</h2>
-                    <p class="shop-sub">{{ shop.store_address }}</p>
+                  {{ shop.distance < 1000 ? Math.round(shop.distance) + 'm' : (shop.distance / 1000).toFixed(1) + 'km' }}
+                </span>
+                <h2 class="shop-title">{{ shop.store_name }}</h2>
+                <p class="shop-sub">{{ shop.store_address }}</p>
               </div>
               <div class="sale-status">
                 <span class="sale-count">{{ getAvailableCount(shop) }}개 세일</span>
@@ -75,10 +98,10 @@
           <div class="shop-main-info" @click="isMapPanelOpen = !isMapPanelOpen">
             <div class="shop-text">
               <span class="badge">
-                {{ selectedShop.distance < 1000 ? Math.round(selectedShop.distance) + 'm' : (selectedShop.distance /
-                  1000).toFixed(1) + 'km' }} </span>
-                  <h2 class="shop-title">{{ selectedShop.store_name }}</h2>
-                  <p class="shop-sub">{{ selectedShop.store_address }}</p>
+                {{ selectedShop.distance < 1000 ? Math.round(selectedShop.distance) + 'm' : (selectedShop.distance / 1000).toFixed(1) + 'km' }}
+              </span>
+              <h2 class="shop-title">{{ selectedShop.store_name }}</h2>
+              <p class="shop-sub">{{ selectedShop.store_address }}</p>
             </div>
             <div class="sale-status">
               <span class="sale-count">{{ getAvailableCount(selectedShop) }}개 세일</span>
@@ -115,13 +138,10 @@
         <div v-else class="no-selection">📍 지도의 마커를 눌러 상세 정보를 확인하세요</div>
       </div>
     </main>
+
     <div class="floating-cart" @click="goToCart">
       🛒
-      <div 
-        v-if="totalCartCount > 0" 
-        class="cart-badge" 
-        :key="totalCartCount"
-      >
+      <div v-if="totalCartCount > 0" class="cart-badge" :key="totalCartCount">
         {{ totalCartCount }}
       </div>
     </div>
@@ -132,16 +152,120 @@
 import { ref, onMounted, nextTick, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api';
+import axios from 'axios';
 
 const router = useRouter();
 const isFetching = ref(true);
 const viewType = ref('list');
 const shops = ref([]);
 const expandedShopId = ref(null);
-const userCoords = ref({ lat: 37.359, lng: 127.105 }); // 기본값 (네이버 본사)
+const userCoords = ref({ lat: 37.359, lng: 127.105 });
 const selectedShop = ref(null);
 const isMapPanelOpen = ref(false);
 const cart = ref([]);
+
+const selectedSido = ref('');
+const selectedSigg = ref('');
+const selectedDong = ref('');
+
+const sidoList = ref([]);
+const siggList = ref([]);
+const dongList = ref([]);
+
+let mapInstance = null;
+
+const sgisToken = ref('');
+
+const fetchSgisToken = async () => {
+  if (sgisToken.value) return sgisToken.value;
+
+  try {
+    const serviceId = import.meta.env.VITE_SGIS_SERVICE_ID;
+    const securityKey = import.meta.env.VITE_SGIS_SECURITY_KEY;
+
+    const res = await axios.get('/sgis-api/OpenAPI3/auth/authentication.json', {
+      params: {
+        consumer_key: serviceId,
+        consumer_secret: securityKey
+      }
+    });
+
+    if (res.data.errCd === 0) {
+      sgisToken.value = res.data.result.accessToken;
+      return sgisToken.value;
+    }
+        return null;
+      } catch (e) {
+        console.error("SGIS Token Error:", e);
+        return null;
+      }
+    };
+
+// 단계별 행정구역 데이터 조회 API
+const fetchStageAddress = async (cd = '') => {
+  try {
+    const token = await fetchSgisToken();
+    if (!token) return [];
+
+    const params = { accessToken: token };
+    if (cd) params.cd = cd;
+
+    const res = await axios.get('/sgis-api/OpenAPI3/addr/stage.json', { params });
+    if (res.data.errCd === 0) {
+      return res.data.result;
+    }
+    return [];
+  } catch (e) {
+    console.error("행정구역 조회 실패:", e);
+    return [];
+  }
+};
+
+// 드롭다운 변경 이벤트
+const onSidoChange = async () => {
+  selectedSigg.value = '';
+  selectedDong.value = '';
+  siggList.value = [];
+  dongList.value = [];
+
+  if (selectedSido.value) {
+    const target = sidoList.value.find(item => item.addr_name === selectedSido.value);
+    if (target) {
+      siggList.value = await fetchStageAddress(target.cd);
+    }
+  }
+  fetchStores(); // 시/도만 선택했을 때도 백엔드 검색 적용
+};
+
+const onSiggChange = async () => {
+  selectedDong.value = '';
+  dongList.value = [];
+
+  if (selectedSigg.value) {
+    const target = siggList.value.find(item => item.addr_name === selectedSigg.value);
+    if (target) {
+      const rawList = await fetchStageAddress(target.cd);
+
+      const uniqueMap = new Map();
+      
+      if (Array.isArray(rawList)) {
+        rawList.forEach(item => {
+          const cleanName = item.addr_name.replace(/[0-9]/g, '');
+          
+          if (!uniqueMap.has(cleanName)) {
+            uniqueMap.set(cleanName, {
+              cd: item.cd,
+              addr_name: cleanName
+            });
+          }
+        });
+      }
+
+      dongList.value = Array.from(uniqueMap.values());
+    }
+  }
+  fetchStores();
+};
 
 const refreshCart = () => {
   const saved = localStorage.getItem('todayCart');
@@ -169,7 +293,6 @@ const loadKakaoMapScript = () => {
     }
 
     const existingScript = document.getElementById('kakao-map-script');
-
     if (existingScript) {
       existingScript.addEventListener('load', () => {
         window.kakao.maps.load(() => resolve());
@@ -197,6 +320,7 @@ const handleMapTab = async () => {
     await loadKakaoMapScript();
     initKakaoMap();
   } catch (error) {
+    console.error(error);
   }
 };
 
@@ -211,27 +335,25 @@ const initKakaoMap = () => {
     if (!container) return;
 
     const centerPos = new window.kakao.maps.LatLng(userCoords.value.lat, userCoords.value.lng);
-    
-    const map = new window.kakao.maps.Map(container, {
+
+    mapInstance = new window.kakao.maps.Map(container, {
       center: centerPos,
       level: 3
     });
 
-    // 내 위치
     const myPosImage = new window.kakao.maps.MarkerImage(
       'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
       new window.kakao.maps.Size(35, 35)
     );
-    
+
     new window.kakao.maps.Marker({
       position: centerPos,
       image: myPosImage,
-      map: map
+      map: mapInstance
     });
 
     filteredShops.value.forEach(shop => {
       const saleCount = getAvailableCount(shop);
-      
       const shopPos = new window.kakao.maps.LatLng(shop.lat, shop.lng);
 
       const content = `
@@ -248,7 +370,7 @@ const initKakaoMap = () => {
       new window.kakao.maps.CustomOverlay({
         position: shopPos,
         content: content,
-        map: map,
+        map: mapInstance,
         xAnchor: 0.5,
         yAnchor: 0.5
       });
@@ -279,15 +401,15 @@ const addToCart = (shop, item) => {
     existing.quantity += quantity;
   } else {
     cart.value.push({
-      id: item.id, 
+      id: item.id,
       display_name: item.display_name,
       price: item.discount_price,
-      quantity: quantity, 
-      store_name: shop.store_name, 
+      quantity: quantity,
+      store_name: shop.store_name,
       maxCount: item.count,
       store_address: shop.store_address,
-      lat: shop.lat,   
-      lng: shop.lng, 
+      lat: shop.lat,
+      lng: shop.lng,
     });
   }
   item.tempCount = 1;
@@ -305,7 +427,6 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-// GPS 위치 잡기
 const fetchLocation = () => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
@@ -315,15 +436,15 @@ const fetchLocation = () => {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        userCoords.value = { 
-          lat: pos.coords.latitude, 
-          lng: pos.coords.longitude 
+        userCoords.value = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
         };
-        resolve(); 
+        resolve();
       },
       (err) => {
         console.warn("⚠️ 위치 잡기 실패 (기본값 사용):", err.message);
-        resolve(); 
+        resolve();
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -332,8 +453,14 @@ const fetchLocation = () => {
 
 const fetchStores = async () => {
   try {
-    const response = await api.get('/api/stores/');
-    
+    // 시/구/동 검색 조건이 있을 경우 쿼리 파라미터 전달
+    const params = {};
+    if (selectedSido.value) params.sido = selectedSido.value;
+    if (selectedSigg.value) params.sigg = selectedSigg.value;
+    if (selectedDong.value) params.dong = selectedDong.value;
+
+    const response = await api.get('/api/stores/', { params });
+
     shops.value = response.data.map(shop => {
       const dist = getDistance(userCoords.value.lat, userCoords.value.lng, shop.lat, shop.lng);
       return {
@@ -343,12 +470,16 @@ const fetchStores = async () => {
       };
     }).sort((a, b) => a.distance - b.distance);
   } catch (e) {
+    console.error('가게 목록 조회 오류:', e);
   }
 };
 
 onMounted(async () => {
   isFetching.value = true;
-  await fetchLocation(); 
+  await fetchLocation();
+
+  sidoList.value = await fetchStageAddress();
+
   await fetchStores();
 
   refreshCart();
@@ -370,42 +501,6 @@ onUnmounted(() => {
   padding-bottom: 80px;
 }
 
-.loading-full-screen {
-  position: fixed;
-  inset: 0;
-  background: #F4E2D0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.loading-box {
-  text-align: center;
-}
-
-.bread-bounce {
-  font-size: 50px;
-  animation: bounce 0.6s infinite alternate;
-}
-
-@keyframes bounce {
-  from {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(-20px);
-  }
-}
-
-.loading-text {
-  font-family: 'Black Han Sans';
-  color: #3A5635;
-  margin-top: 20px;
-  line-height: 1.4;
-}
-
 .app-header {
   padding: 30px 20px 10px;
 }
@@ -422,10 +517,33 @@ onUnmounted(() => {
   color: #D57B0E;
 }
 
+.region-select-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.region-select {
+  flex: 1;
+  padding: 8px 4px;
+  border: 2px solid #222;
+  border-radius: 4px;
+  font-weight: 800;
+  background: white;
+  box-shadow: 2px 2px 0px #222;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.region-select:disabled {
+  background: #e0e0e0;
+  cursor: not-allowed;
+}
+
 .tab-menu {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 15px;
 }
 
 .tab-menu button {
@@ -436,6 +554,7 @@ onUnmounted(() => {
   font-weight: 800;
   background: white;
   box-shadow: 3px 3px 0px #222;
+  cursor: pointer;
 }
 
 .tab-menu button.active {
@@ -452,7 +571,7 @@ onUnmounted(() => {
 .map-view-layout {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 160px);
+  height: calc(100vh - 220px);
 }
 
 .map-wrapper {
@@ -518,17 +637,6 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.loading-card {
-  background: #fffcf9;
-  border: 2px dashed #3A5635;
-}
-
-.inline-loading-text {
-  font-weight: 800;
-  color: #3A5635;
-  animation: pulse 1.5s infinite;
-}
-
 .shop-title {
   font-size: 1.4rem;
   font-weight: 900;
@@ -564,13 +672,6 @@ onUnmounted(() => {
 .bread-info {
   flex: 1;
   margin-left: 10px;
-}
-
-.b-stock {
-  font-size: 11px;
-  color: #3A5635;
-  font-weight: 800;
-  margin-top: 4px;
 }
 
 .new {
@@ -640,7 +741,7 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-.floating-cart { 
+.floating-cart {
   position: fixed;
   right: 25px;
   bottom: 30px;
@@ -660,31 +761,28 @@ onUnmounted(() => {
 
 .cart-badge {
   position: absolute;
-  top: -8px; 
+  top: -8px;
   right: -8px;
-  background: #D57B0E; 
+  background: #D57B0E;
   color: white;
   font-size: 20px;
   font-weight: 800;
-  
-  width: 32px;     
-  height: 32px;       
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;   
-  
+  border-radius: 50%;
   border: 3px solid #222;
   box-shadow: 2px 2px 0px #222;
   z-index: 10;
-
   animation: badge-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes badge-pop {
   0% { transform: scale(0.5); opacity: 0; }
-  70% { transform: scale(1.4); } /* 살짝 과하게 커졌다가 */
-  100% { transform: scale(1); opacity: 1; } /* 딱 정사이즈 */
+  70% { transform: scale(1.4); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .empty-state {
@@ -706,21 +804,10 @@ onUnmounted(() => {
 }
 
 @keyframes dot-play {
-  0% {
-    content: '';
-  }
-
-  33% {
-    content: '.';
-  }
-
-  66% {
-    content: '..';
-  }
-
-  100% {
-    content: '...';
-  }
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
 }
 
 .chevron {
@@ -745,15 +832,5 @@ onUnmounted(() => {
 
 .map-info-panel .shop-text {
   text-align: left;
-}
-
-.bread-marker-wrapper {
-  position: relative;
-  width: 60px;   
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
 }
 </style>

@@ -8,7 +8,7 @@ def verify_business_number(b_no):
     service_key = env('BUSINESS_API_KEY')
     url = f"https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey={service_key}"
     
-    if b_no == "0000000000": return True, "테스트" # 테스트용  
+    if b_no == "4444444444": return True, "테스트" # 테스트용  
 
     payload = json.dumps({"b_no": [b_no]}) 
     headers = {'Content-Type': 'application/json'}
@@ -29,9 +29,6 @@ def verify_business_number(b_no):
             return True, status_msg
         else:
             return False, status_msg
-        
-        # if res_data.get('data')[0].get('b_stts_cd') == '01':  # 01이면 통과임
-        #     return True
-        # return False
+            
     except:
         return False, "조회 오류"

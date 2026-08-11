@@ -1,6 +1,13 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
-from .models import User
+# from .models import User
 
-# 커스텀 유저 모델을 어드민에서 볼 수 있게 등록
-admin.site.register(User, UserAdmin)
+User = get_user_model()
+
+# class MyUserAdmin(UserAdmin):
+#     list_display = ('username', 'nickname', 'is_owner')
+
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'nickname', 'is_owner') # 'owner',)

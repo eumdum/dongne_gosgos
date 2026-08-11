@@ -177,11 +177,8 @@ const orderNow = async () => {
           pickup_number: String(Math.floor(Math.random() * 900) + 100),
           items_summary: cartItems.value.map(i => `${i.display_name} ${i.quantity}개`).join(', '),
           total_price: totalPrice.value,
-          shop_name: cartItems.value[0].store_name || 
-                     cartItems.value[0].shopName ||
-                     cartItems.value[0].shop_name || 
-                     "알 수 없는 가게",
-          customer_name: localStorage.getItem('userName'),
+          store_name: cartItems.value[0].store_name || "알 수 없는 가게",
+          customer_name: localStorage.getItem('userName') || "손님",
           status: "결제완료",
           pickup_time: finalPickupTime,
           cartItems: cartItems.value.map(item => ({
@@ -189,6 +186,8 @@ const orderNow = async () => {
             quantity: item.quantity
           }))
         };
+
+        await api.post('/api/create-order/', orderData);
 
         // 서버에 주문 생성 요청
         await api.post('/api/create-order/', orderData);
@@ -211,7 +210,7 @@ const orderNow = async () => {
         router.push('/pickup');
 
       } catch (error) {
-        alert("결제는 성공했으나, 서버에 주문을 저장하지 못했습니다.");
+        alert(error.response?.data?.error || "주문 저장 중 오류가 발생했습니다.");
       }
     } else {
       alert(`결제 실패: ${rsp.error_msg}`);

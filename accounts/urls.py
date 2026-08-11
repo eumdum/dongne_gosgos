@@ -1,9 +1,8 @@
 from django.urls import path
 from . import views
-from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path('signup/', views.signup, name='signup'),
-    path('login/', obtain_auth_token, name='login'),
+    path('login/', views.login_view, name='login'),
     path('verify-biz/', views.verify_biz, name='verify_biz'),
 ]

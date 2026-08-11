@@ -21,12 +21,12 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_key.json"
 # ---------------------------------------------------------------
 rf = Roboflow(api_key=env('ROBOFLOW_API_KEY'))
 
-# 네임텍 전용 모델
-# rf_project_tag = rf.workspace().project("name-tag-hzadd")
-# rf_model_tag = rf_project_tag.version(2).model
+# 네임텍 전용 모델--------------(시작시 항상 로드;)
+rf_project_tag = rf.workspace().project("name-tag-hzadd")
+rf_model_tag = rf_project_tag.version(2).model
 
-# rf_project_bread = rf.workspace().project("1_redbeen-bread")
-# rf_model_bread = rf_project_bread.version(5).model
+rf_project_bread = rf.workspace().project("1_redbeen-bread")
+rf_model_bread = rf_project_bread.version(5).model
 
 
 def normalize_text(text):
@@ -227,7 +227,7 @@ class ShelfScanningView(APIView):
             # 1차 병렬 처리
             #  - 전체 OCR
             #  - 네임텍 detect
-            #  ※ 빵 detect는 여기서 돌리지 않음 (필요할 때만)
+            #  * 빵 detect는 여기서 돌리지 않음 (필요할 때만) *
             # -----------------------------------------------------------
             t1 = time.perf_counter()
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
@@ -272,8 +272,7 @@ class ShelfScanningView(APIView):
                 reverse=True
             )
 
-            # 너무 많은 후보 다 보지 말고 상위 3개만
-            tag_predictions = tag_predictions[:3]
+            tag_predictions = tag_predictions[:3]       # 상위 3개만 봄
 
             print("=== TAG PREDICTIONS ===", tag_predictions)
 
@@ -491,9 +490,6 @@ class ShelfScanningView(APIView):
         return list(dict.fromkeys(texts))
 
     def _get_full_text_and_blocks(self, image_path):
-        """
-        Vision 호출 1번만 사용
-        """
         client = vision.ImageAnnotatorClient()
 
         with open(image_path, "rb") as f:
