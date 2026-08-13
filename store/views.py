@@ -15,6 +15,12 @@ from .models import DiscountProduct, Store, Order, Product
 from .serializers import StoreSerializer, DiscountProductSerializer, ProductSerializer
 from .detect_views import ShelfScanningView
 import re
+import os
+import requests
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from django.conf import settings
 
 
 class BulkProductSaveView(APIView):
@@ -317,4 +323,43 @@ def get_order_status(request, order_id):
 def test_upload_page(request):
     return render(request, 'test_upload.html')
 
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_sgis_token(request):
+    """SGIS 토큰 발급 프록시"""
+    service_id = getattr(settings, 'SGIS_SERVICE_ID', os.getenv('SGIS_SERVICE_ID', ''))
+    security_key = getattr(settings, 'SGIS_SECURITY_KEY', os.getenv('SGIS_SECURITY_KEY', ''))
+
+    url = "https://sgisapi.kostat.go.kr/OpenAPI3/auth/authentication.json"
+    params = {
+        "consumer_key": service_id,
+        "consumer_secret": security_key
+    }
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        return JsonResponse(response.json())
+    except Exception as e:
+        print(f"❌ SGIS Token Backend Error: {e}")
+        return JsonResponse({"errCd": -1, "errMsg": str(e)}, status=500)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_sgis_stage(request):
+    """SGIS 행정구역 단계 조회 프록시"""
+    token = request.GET.get('accessToken')
+    cd = request.GET.get('cd', '')
+    
+    url = "https://sgisapi.kostat.go.kr/OpenAPI3/addr/stage.json"
+    params = {"accessToken": token}
+    if cd:
+        params["cd"] = cd
+        
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        return JsonResponse(response.json())
+    except Exception as e:
+        print(f"❌ SGIS Stage Backend Error: {e}")
+        return JsonResponse({"errCd": -1, "errMsg": str(e)}, status=500)
+        
 User = get_user_model()

@@ -186,3 +186,7 @@ if not os.path.exists(MEDIA_ROOT):
 # --- 기본 설정 ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'accounts.User'
+
+# --- 행정구역 관련 ---
+SGIS_SERVICE_ID = env('SGIS_SERVICE_ID', default='')
+SGIS_SECURITY_KEY = env('SGIS_SECURITY_KEY', default='')

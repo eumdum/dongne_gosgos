@@ -22,9 +22,10 @@ export default defineConfig({
       '/sgis-api': {
         target: 'https://sgisapi.kostat.go.kr',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/sgis-api/, '')
-      }
-    }
+        rewrite: (path) => path.replace(/^\/sgis-api/, ''),
+        secure: false,
+      },
+    },
     // host: true,
   },
   resolve: {

@@ -180,26 +180,39 @@ const fetchSgisToken = async () => {
   if (sgisToken.value) return sgisToken.value;
 
   try {
-    const serviceId = import.meta.env.VITE_SGIS_SERVICE_ID;
-    const securityKey = import.meta.env.VITE_SGIS_SECURITY_KEY;
+    // const serviceId = import.meta.env.VITE_SGIS_SERVICE_ID;
+    // const securityKey = import.meta.env.VITE_SGIS_SECURITY_KEY;
 
-    const res = await axios.get('/sgis-api/OpenAPI3/auth/authentication.json', {
-      params: {
-        consumer_key: serviceId,
-        consumer_secret: securityKey
-      }
-    });
+    // const res = await axios.get('/sgis-api/OpenAPI3/auth/authentication.json', {
+    // // const res = await axios.get('https://sgisapi.kostat.go.kr/OpenAPI3/auth/authentication.json', {
+    //   params: {
+    //     consumer_key: serviceId,
+    //     consumer_secret: securityKey
+    //   }
+    // });
+
+    // if (res.data.errCd === 0) {
+    //   sgisToken.value = res.data.result.accessToken;
+    //   return sgisToken.value;
+    // }
+    //     return null;
+    //   } catch (e) {
+    //     console.error("SGIS Token Error:", e);
+    //     return null;
+    //   }
+    // };
+    const res = await api.get('/api/sgis/token/');
 
     if (res.data.errCd === 0) {
       sgisToken.value = res.data.result.accessToken;
       return sgisToken.value;
     }
-        return null;
-      } catch (e) {
-        console.error("SGIS Token Error:", e);
-        return null;
-      }
-    };
+    return null;
+  } catch (e) {
+    console.error("SGIS Token Error:", e);
+    return null;
+  }
+};
 
 // 단계별 행정구역 데이터 조회 API
 const fetchStageAddress = async (cd = '') => {
@@ -210,7 +223,10 @@ const fetchStageAddress = async (cd = '') => {
     const params = { accessToken: token };
     if (cd) params.cd = cd;
 
-    const res = await axios.get('/sgis-api/OpenAPI3/addr/stage.json', { params });
+    const res = await api.get('/api/sgis/stage/', { params });
+
+    // const res = await axios.get('/sgis-api/OpenAPI3/addr/stage.json', { params });
+    // // const res = await axios.get('https://sgisapi.kostat.go.kr/OpenAPI3/addr/stage.json', { params });
     if (res.data.errCd === 0) {
       return res.data.result;
     }
