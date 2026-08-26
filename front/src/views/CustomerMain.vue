@@ -283,6 +283,10 @@ const onSiggChange = async () => {
   fetchStores();
 };
 
+const onDongChange = () => {
+  fetchStores(); 
+};
+
 const refreshCart = () => {
   const saved = localStorage.getItem('todayCart');
   cart.value = saved ? JSON.parse(saved) : [];

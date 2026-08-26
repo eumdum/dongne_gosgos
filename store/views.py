@@ -152,7 +152,8 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         # 읍/면/동 필터링 
         if dong:
-            clean_dong = re.sub(r'[0-9동가리]', '', dong).strip()
+            # clean_dong = re.sub(r'[0-9동가리]', '', dong).strip()
+            clean_dong = re.sub(r'[0-9]', '', dong).strip()
             if clean_dong:
                 queryset = queryset.filter(store_address__icontains=clean_dong)
 

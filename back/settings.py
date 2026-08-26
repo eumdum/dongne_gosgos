@@ -25,6 +25,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 from datetime import timedelta
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "store.apps.StoreConfig",
     "accounts",
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +82,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8000",
     "http://localhost:8080",
-    "https://dongne-gosgos.store",  
+    "https://dongne-gosgos.store",
+    "https://www.dongne-gosgos.store",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -190,3 +193,10 @@ AUTH_USER_MODEL = 'accounts.User'
 # --- 행정구역 관련 ---
 SGIS_SERVICE_ID = env('SGIS_SERVICE_ID', default='')
 SGIS_SECURITY_KEY = env('SGIS_SECURITY_KEY', default='')
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': '동네곳곳 API 명세서',
+    'DESCRIPTION': '동네곳곳 (Bakery Pickup Platform) API Documents',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
