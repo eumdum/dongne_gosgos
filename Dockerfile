@@ -11,6 +11,13 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     default-libmysqlclient-dev \
     build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libxcb1 \
+    libx11-xcb1 \
+    libxcb-render0 \
+    libxcb-shape0 \
+    libxcb-xfixes0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
