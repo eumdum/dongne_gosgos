@@ -177,7 +177,7 @@ const orderNow = async () => {
           pickup_number: String(Math.floor(Math.random() * 900) + 100),
           items_summary: cartItems.value.map(i => `${i.display_name} ${i.quantity}개`).join(', '),
           total_price: totalPrice.value,
-          store_name: cartItems.value[0].store_name || "알 수 없는 가게",
+          shop_name: cartItems.value[0].shopName || cartItems.value[0].store_name || "알 수 없는 가게",
           customer_name: localStorage.getItem('userName') || "손님",
           status: "결제완료",
           pickup_time: finalPickupTime,
@@ -187,9 +187,6 @@ const orderNow = async () => {
           }))
         };
 
-        await api.post('/api/create-order/', orderData);
-
-        // 서버에 주문 생성 요청
         await api.post('/api/create-order/', orderData);
 
         // 로컬스토리지에 마지막 주문 정보 저장 (픽업 페이지용)

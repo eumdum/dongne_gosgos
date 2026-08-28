@@ -176,7 +176,7 @@ class DiscountProductViewSet(viewsets.ModelViewSet):
 def create_order(request):
     user = request.user
     data = request.data
-    shop_name = data.get('shop_name')
+    shop_name = data.get('shop_name') or data.get('store_name') or data.get('storeName')
 
     if hasattr(user, 'store'):
         if user.store.store_name == shop_name:
