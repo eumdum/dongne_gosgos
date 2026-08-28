@@ -151,6 +151,92 @@ const removeAll = () => {
   if (confirm("모든 목록을 비울까요?")) cartItems.value = [];
 };
 
+
+// 추후 png vs jpeg 비교실험-----------------------------------------
+// const onFileSelected = async (event) => {
+//   const file = event.target.files[0];
+//   if (!file) return;
+
+//   showModal.value = false; 
+//   isLoading.value = true;
+
+//   const formData = new FormData();
+//   formData.append('image', file);
+
+//   try {
+//     const res = await api.post('/api/detect/', formData);
+//     if (res.data?.items) {
+//       const grouped = res.data.items.reduce((acc, current) => {
+//         const found = acc.find(item => item.name === current.name);
+//         if (found) found.count += 1;
+//         else acc.push({
+//           name: current.name,
+//           product_id: current.product_id,
+//           original_price: current.price, // 원가
+//           price: current.price * 0.8, // 기본 20% 할인된 가격 
+//           count: 1,
+//           discount: 20, 
+//           selected: true 
+//         });
+//         return acc;
+//       }, []);
+//       analysisResults.value = grouped;
+//       isLoading.value = false;
+//       showModal.value = true;
+//     }
+//   } catch (err) {
+//     isLoading.value = false;
+//     alert("분석 실패!");
+//   }
+  
+//   event.target.value = '';
+// };---------------------------------------------------------
+// 이미지 압축 함수 (가로/세로 최대 1280px로 축소하여 용량 줄임)
+const resizeImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1280;
+        const MAX_HEIGHT = 1280;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // 용량을 1~2MB 수준으로 축소
+        canvas.toBlob((blob) => {
+          const resizedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(resizedFile);
+        }, 'image/jpeg', 0.85);
+      };
+    };
+  });
+};
+
+// 수정된 파일 선택 및 분석 요청 함수
 const onFileSelected = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -158,10 +244,12 @@ const onFileSelected = async (event) => {
   showModal.value = false; 
   isLoading.value = true;
 
-  const formData = new FormData();
-  formData.append('image', file);
-
   try {
+    const compressedFile = await resizeImage(file);
+
+    const formData = new FormData();
+    formData.append('image', compressedFile);
+
     const res = await api.post('/api/detect/', formData);
     if (res.data?.items) {
       const grouped = res.data.items.reduce((acc, current) => {
@@ -170,8 +258,8 @@ const onFileSelected = async (event) => {
         else acc.push({
           name: current.name,
           product_id: current.product_id,
-          original_price: current.price, // 원가
-          price: current.price * 0.8, // 기본 20% 할인된 가격 
+          original_price: current.price,
+          price: current.price * 0.8,
           count: 1,
           discount: 20, 
           selected: true 
