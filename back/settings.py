@@ -112,11 +112,9 @@ WSGI_APPLICATION = "back.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-hostname = socket.gethostname()
+DB_HOST = env('DB_HOST', default=None)
 
-IS_DOCKER = env.bool('IS_DOCKER', default=False)
-
-if IS_DOCKER:
+if DB_HOST:
     DATABASES = { 
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -125,6 +123,10 @@ if IS_DOCKER:
             'PASSWORD': env('DB_PASSWORD'),
             'HOST': env('DB_HOST'),
             'PORT': env('DB_PORT'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            },
         }
     }
 else:
