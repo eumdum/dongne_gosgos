@@ -3,7 +3,7 @@
     <header>
       <div class="header-left">
         <router-link to="/main" class="back-btn">←</router-link>
-        <h1>👨‍🍳 사장님 전용 대시보드</h1>
+        <h1>👨‍🍳 픽업 관리</h1>
       </div>
       <div class="header-right">
         <button @click="toggleAlarm" class="alarm-btn" :class="{ 'alarm-on': isAlarmEnabled }">

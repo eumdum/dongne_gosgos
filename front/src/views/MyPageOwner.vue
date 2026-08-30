@@ -8,11 +8,6 @@
         <div class="text">실시간 픽업 현황</div>
       </button>
 
-      <button class="choice-card product" @click="goPath('/product-manage')">
-        <div class="icon">📚</div>
-        <div class="text">상품 관리</div>
-      </button>
-
       <button class="choice-card history" @click="goPath('/mypage')">
         <div class="icon">📜</div>
         <div class="text">나의 빵 기록</div>

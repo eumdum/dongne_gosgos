@@ -5,20 +5,25 @@
     </header>
 
     <main class="admin-grid">
-      <router-link to="/register" class="admin-card wide">
-        <span class="icon">📸</span>
-        <span class="label">할인 빵 등록</span>
-      </router-link>
+      <div class="grid-2x2">
+        <router-link to="/register" class="admin-card card-green">
+          <span class="icon">📸</span>
+          <span class="label">할인 빵 등록</span>
+        </router-link>
 
-      <div class="half-grid">
-        <router-link to="/admin-list" class="admin-card">
+        <router-link to="/admin-list" class="admin-card card-orange">
           <span class="icon">📦</span>
           <span class="label">재고 관리</span>
         </router-link>
 
-        <router-link to="/store-pickup" class="admin-card">
+        <router-link to="/store-pickup" class="admin-card card-orange">
           <span class="icon">🛍️</span>
           <span class="label">픽업 관리</span>
+        </router-link>
+
+        <router-link to="/product-manage" class="admin-card card-orange">
+          <span class="icon">📚</span>
+          <span class="label">빵 사전</span>
         </router-link>
       </div>
     </main>
@@ -51,9 +56,12 @@
 
 .admin-grid {
   width: 100%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
+  max-width: 420px;
+}
+
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
@@ -66,13 +74,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 150px;
   transition: all 0.2s ease;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.admin-card.wide {
-  height: 160px;
-  border-color: #10b981;
 }
 
 .admin-card:active {
@@ -101,4 +105,12 @@
   color: #9ca3af;
   font-size: 12px;
 }
+
+.card-green { border-color: #10b981; }
+.card-orange { border-color: #f59e0b; }
+.card-blue { border-color: #3b82f6; }
+
+.icon { font-size: 38px; margin-bottom: 10px; }
+.label { font-size: 17px; font-weight: 800; color: #374151; }
+
 </style>
